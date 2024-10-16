@@ -99,7 +99,7 @@ const defaultTheme: Theme = {
     // 图片
     image: {
       'display': `block`,
-      'width': `100% !important`,
+      'max-width': `100% !important`,
       'margin': `0.1em auto 0.5em`,
       'border-radius': `4px`,
     },
@@ -212,8 +212,7 @@ const defaultTheme: Theme = {
 }
 
 const graceTheme = toMerged(defaultTheme, {
-  base: {
-  },
+  base: {},
   block: {
     h1: {
       'padding': `0.5em 1em`,
@@ -240,8 +239,7 @@ const graceTheme = toMerged(defaultTheme, {
       'font-size': `1.1em`,
     },
 
-    p: {
-    },
+    p: {},
 
     blockquote: {
       'font-style': `italic`,
@@ -253,8 +251,7 @@ const graceTheme = toMerged(defaultTheme, {
       'box-shadow': `0 4px 6px rgba(0,0,0,0.05)`,
     },
 
-    blockquote_p: {
-    },
+    blockquote_p: {},
 
     code_pre: {
       'box-shadow': `inset 0 0 10px rgba(0,0,0,0.05)`,
@@ -279,13 +276,9 @@ const graceTheme = toMerged(defaultTheme, {
       'padding-left': `1.5em`,
     },
 
-    footnotes: {
+    footnotes: {},
 
-    },
-
-    figure: {
-
-    },
+    figure: {},
 
     hr: {
       height: `1px`,
@@ -299,20 +292,15 @@ const graceTheme = toMerged(defaultTheme, {
       margin: `0.5em 8px`,
     },
 
-    codespan: {
-    },
+    codespan: {},
 
-    em: {
-    },
+    em: {},
 
-    link: {
-    },
+    link: {},
 
-    wx_link: {
-    },
+    wx_link: {},
 
-    strong: {
-    },
+    strong: {},
 
     table: {
       'border-collapse': `separate`,
@@ -336,9 +324,7 @@ const graceTheme = toMerged(defaultTheme, {
       color: `rgba(0,0,0,0.5)`,
     },
 
-    figcaption: {
-
-    },
+    figcaption: {},
   },
 })
 

@@ -15,7 +15,7 @@ import {
 
 import { useDisplayStore, useStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { ref, toRaw } from 'vue'
 import StyleOptionMenu from './StyleOptionMenu.vue'
 
 const store = useStore()
@@ -53,7 +53,7 @@ function showPicker() {
 function customStyle() {
   toggleShowCssEditor()
   setTimeout(() => {
-    cssEditor.value!.refresh()
+    toRaw(cssEditor.value)!.dispatch()
   }, 50)
 }
 </script>
@@ -66,39 +66,33 @@ function customStyle() {
         title="主题"
         :options="themeOptions"
         :current="theme"
-        :change="themeChanged"
-      />
+        :change="themeChanged" />
       <MenubarSeparator />
       <StyleOptionMenu
         title="字体"
         :options="fontFamilyOptions"
         :current="fontFamily"
-        :change="fontChanged"
-      />
+        :change="fontChanged" />
       <StyleOptionMenu
         title="字号"
         :options="fontSizeOptions"
         :current="fontSize"
-        :change="sizeChanged"
-      />
+        :change="sizeChanged" />
       <StyleOptionMenu
         title="主题色"
         :options="colorOptions"
         :current="primaryColor"
-        :change="colorChanged"
-      />
+        :change="colorChanged" />
       <StyleOptionMenu
         title="代码块主题"
         :options="codeBlockThemeOptions"
         :current="codeBlockTheme"
-        :change="codeBlockThemeChanged"
-      />
+        :change="codeBlockThemeChanged" />
       <StyleOptionMenu
         title="图注格式"
         :options="legendOptions"
         :current="legend"
-        :change="legendChanged"
-      />
+        :change="legendChanged" />
       <MenubarSeparator />
       <MenubarItem @click.self.prevent="showPicker">
         <HoverCard :open-delay="100">
@@ -115,8 +109,7 @@ function customStyle() {
               class="ml-auto"
               style="height: 2em"
               @change="colorChanged"
-              @click="showPicker"
-            />
+              @click="showPicker" />
           </HoverCardContent>
         </HoverCard>
         <!-- <el-icon class="mr-2 h-4 w-4" />

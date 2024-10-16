@@ -9,7 +9,7 @@ import {
 import { useDisplayStore, useStore } from '@/stores'
 
 import { createTable } from '@/utils'
-import { ref, toRaw } from 'vue'
+import { ref } from 'vue'
 
 const store = useStore()
 const displayStore = useDisplayStore()
@@ -33,7 +33,8 @@ function insertTable() {
     cols: colNum.value,
     data: tableData.value,
   })
-  toRaw(store.editor!).replaceSelection(`\n${table}\n`, `end`)
+  store.editor!.state.replaceSelection(`\n${table}\n`)
+  // toRaw(store.editor!).replaceSelection(`\n${table}\n`, `end`)
   resetVal()
   toggleShowInsertFormDialog()
 }
@@ -59,8 +60,7 @@ function onUpdate(val: boolean) {
             controls-position="right"
             :min="1"
             :max="100"
-            size="small"
-          />
+            size="small" />
         </el-col>
         <el-col :span="12">
           列数：
@@ -69,8 +69,7 @@ function onUpdate(val: boolean) {
             controls-position="right"
             :min="1"
             :max="100"
-            size="small"
-          />
+            size="small" />
         </el-col>
       </el-row>
       <table style="border-collapse: collapse" class="input-table">
@@ -79,8 +78,7 @@ function onUpdate(val: boolean) {
             <el-input
               v-model="tableData[`k_${row - 1}_${col - 1}`]"
               align="center"
-              :placeholder="row === 1 ? '表头' : ''"
-            />
+              :placeholder="row === 1 ? '表头' : ''" />
           </td>
         </tr>
       </table>

@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/html-self-closing -->
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
@@ -12,11 +13,8 @@ onMounted(() => {
 
 <template>
   <transition name="fade">
-    <div
-      v-if="loading"
-      class="loading"
-    >
-      <strong>致力于让 Markdown 编辑更简单</strong>
+    <div v-if="loading" class="loading">
+      <img src="../assets/images/favicon.png" alt="ico" />
     </div>
   </transition>
 </template>
@@ -35,18 +33,12 @@ onMounted(() => {
   height: 100vh;
   font-size: 18px;
   background-color: var(--el-bg-color-page);
-
-  &::before {
-    content: url('../assets/images/favicon.png');
-    width: 100px;
-    height: 100px;
-    margin-bottom: 26px;
-  }
 }
 
 .fade-enter,
 .fade-leave-to {
   opacity: 0;
+  transform: translateY(-80px);
 }
 
 .fade-enter-to,
@@ -56,6 +48,6 @@ onMounted(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 1s;
+  transition: all 1s;
 }
 </style>

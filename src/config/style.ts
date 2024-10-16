@@ -13,7 +13,7 @@ export const fontFamilyOptions: IConfigOption[] = [
   },
   {
     label: `等宽`,
-    value: `Menlo, Monaco, 'Courier New', monospace`,
+    value: `Menlo, Monaco, 'Courier New', '黑体', monospace`,
     desc: `字体123Abc`,
   },
 ]

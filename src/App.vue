@@ -1,9 +1,41 @@
 <script setup lang="ts">
+import ArticleBar from '@/components/ArticleBar/index.vue'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
+import { onMounted } from 'vue'
+
+function setVarStyle(key: string, value: any, dom = document.documentElement) {
+  dom.style.setProperty(key, value)
+}
+/* --el-color-primary: #1fc372;
+    --el-color-primary-light-3: #5ec491;
+    --el-color-primary-light-5: #7dc29f;
+    --el-color-primary-light-7: #97c0ab;
+    --el-color-primary-light-8: #a5beb1;
+    --el-color-primary-light-9: #b2beb8;
+    --el-color-primary-dark-2: #1db368; */
+
+onMounted(() => {
+  setVarStyle(`--el-color-primary`, `#1fc372`)
+  setVarStyle(`--el-color-primary-light-3`, `#5ec491`)
+  setVarStyle(`--el-color-primary-light-5`, `#7dc29f`)
+  setVarStyle(`--el-color-primary-light-7`, `#97c0ab`)
+  setVarStyle(`--el-color-primary-light-8`, `#a5beb1`)
+  setVarStyle(`--el-color-primary-light-9`, `#b2beb8`)
+  setVarStyle(`--el-color-primary-dark-2`, `#1db368`)
+})
 </script>
 
 <template>
-  <CodemirrorEditor />
+  <el-config-provider>
+    <el-row class="h-screen w-screen">
+      <el-col :span="3">
+        <ArticleBar />
+      </el-col>
+      <el-col :span="21">
+        <CodemirrorEditor />
+      </el-col>
+    </el-row>
+  </el-config-provider>
 </template>
 
 <style lang="less">
@@ -14,6 +46,7 @@ body,
   height: 100vh;
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 // 抵消下拉菜单开启时带来的样式

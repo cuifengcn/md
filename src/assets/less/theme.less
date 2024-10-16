@@ -7,6 +7,12 @@
 @nightLineColor: #84868b;
 
 .dark {
+  .cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground {
+    background-color: #8a8a8a;
+  }
+  .cm-selectionBackground {
+    background-color: #8a8a8a88;
+  }
   .container {
     .output_night {
       .preview {
@@ -30,30 +36,44 @@
   }
 }
 
-.CodeMirror {
+.editor {
   padding-bottom: 0;
   height: 100% !important;
+}
+.cm-content {
   font-size: 14px;
-  font-family: 'PingFang SC', BlinkMacSystemFont, Roboto, 'Helvetica Neue',
+  font-family:
+    PingFang SC,
+    BlinkMacSystemFont,
+    '微软雅黑',
+    Roboto,
+    Helvetica Neue,
     sans-serif !important;
+
+  .cm-line {
+    line-height: 1.5rem;
+  }
 }
 
-.CodeMirror-vscrollbar:focus {
+:focus {
   outline: none;
 }
-
-.CodeMirror-scroll {
+#editor {
+  .cm-scroller {
+    overflow-x: hidden !important;
+    overflow-y: scroll !important;
+    scrollbar-width: none;
+    --webkit-scrollbar-width: none;
+  }
+  .cm-scroller::-webkit-scrollbar {
+    display: none; /* 对于 Chrome, Safari 和 Opera 的写法 */
+  }
+}
+.cm-scroller {
   padding: 0 20px;
-  overflow-x: hidden !important;
-  overflow-y: scroll !important;
 }
-
-.CodeMirror-vscrollbar {
-  width: 0px;
-  height: 0px;
-}
-
-.CodeMirror-wrap {
+.cm-editor {
+  height: 100%;
   padding-top: 20px;
   padding-bottom: 20px;
   box-sizing: border-box;

@@ -2,6 +2,9 @@ const animate = require(`tailwindcss-animate`)
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  corePlugins: {
+    preflight: true,
+  },
   darkMode: [`class`],
   safelist: [`dark`],
   prefix: ``,

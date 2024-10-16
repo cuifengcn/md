@@ -8,6 +8,7 @@ import * as prettierPluginEstree from 'prettier/plugins/estree'
 import * as prettierPluginMarkdown from 'prettier/plugins/markdown'
 import * as prettierPluginCss from 'prettier/plugins/postcss'
 import { format } from 'prettier/standalone'
+import { v4 } from 'uuid'
 
 export function addPrefix(str: string) {
   return `${prefix}__${str}`
@@ -316,4 +317,8 @@ export function mergeCss(html: string) {
     inlinePseudoElements: true,
     preserveImportant: true,
   })
+}
+
+export function Uuidv4() {
+  return v4()
 }

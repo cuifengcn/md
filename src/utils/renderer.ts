@@ -10,13 +10,25 @@ import { MDKatex } from './MDKatex'
 
 marked.use(MDKatex({ nonStandard: true }))
 
+function cleanUrl(href: string) {
+  try {
+    href = encodeURI(href).replace(/%25/g, `%`)
+  }
+  catch {
+    return href
+  }
+  return href
+}
+
 function buildTheme({ theme, fonts, size }: IOpts): ThemeStyles {
   const base = toMerged(theme.base, {
     'font-family': fonts,
     'font-size': size,
   })
 
-  const mergeStyles = (styles: Record<string, PropertiesHyphen>): Record<string, ExtendedProperties> =>
+  const mergeStyles = (
+    styles: Record<string, PropertiesHyphen>,
+  ): Record<string, ExtendedProperties> =>
     Object.fromEntries(
       Object.entries(styles).map(([ele, style]) => [ele, toMerged(base, style)]),
     )
@@ -45,7 +57,12 @@ function buildAddition(): string {
   `
 }
 
-function getStyles(styleMapping: ThemeStyles, tokenName: string, addition: string = ``): string {
+function getStyles(
+  styleMapping: ThemeStyles,
+  tokenName: string,
+  addition: string = ``,
+  wrapUp = true,
+): string {
   const dict = styleMapping[tokenName as keyof ThemeStyles]
   if (!dict) {
     return ``
@@ -53,6 +70,9 @@ function getStyles(styleMapping: ThemeStyles, tokenName: string, addition: strin
   const styles = Object.entries(dict)
     .map(([key, value]) => `${key}:${value}`)
     .join(`;`)
+  if (!wrapUp) {
+    return `${styles}${addition}`
+  }
   return `style="${styles}${addition}"`
 }
 
@@ -66,7 +86,11 @@ function buildFootnoteArray(footnotes: [number, string, string][]): string {
     .join(`\n`)
 }
 
-function transform(legend: string, text: string | null, title: string | null): string {
+function transform(
+  legend: string,
+  text: string | null,
+  title: string | null,
+): string {
   const options = legend.split(`-`)
   for (const option of options) {
     if (option === `alt` && text) {
@@ -99,7 +123,11 @@ export function initRenderer(opts: IOpts) {
     return getStyles(styleMapping, tag, addition)
   }
 
-  function styledContent(styleLabel: string, content: string, tagName?: string): string {
+  function styledContent(
+    styleLabel: string,
+    content: string,
+    tagName?: string,
+  ): string {
     const tag = tagName ?? styleLabel
     return `<${tag} ${styles(styleLabel)}>${content}</${tag}>`
   }
@@ -132,6 +160,48 @@ export function initRenderer(opts: IOpts) {
   }
 
   const renderer: RendererObject = {
+    // 完善renderer
+    space(_token: Tokens.Space) {
+      return ``
+    },
+    html(token: Tokens.HTML | Tokens.Tag) {
+      const text = token.text
+
+      const div = document.createElement(`div`)
+      div.innerHTML = text
+      // 遍历解析div中所有元素，然后添加属性style
+      div.querySelectorAll(`*`).forEach((el) => {
+        const tag = el.tagName.toLowerCase().trim()
+        if (tag) {
+          const oldStyle = el.getAttribute(`style`)
+          const style = getStyles(styleMapping, tag, ``, false)
+          // 不要覆盖旧的style
+          el.setAttribute(`style`, oldStyle ? `${style};${oldStyle}` : style)
+        }
+      })
+      return text
+    },
+    checkbox({ checked }: Tokens.Checkbox) {
+      return `<input ${
+        checked ? `checked="" ` : ``
+      }disabled="" type="checkbox">`
+    },
+    tablerow({ text }: Tokens.TableRow) {
+      return `<tr>\n${text}</tr>\n`
+    },
+    br(_token: Tokens.Br) {
+      return `<br>`
+    },
+    del({ tokens }: Tokens.Del) {
+      return `<del>${this.parser.parseInline(tokens)}</del>`
+    },
+    text(token: Tokens.Text | Tokens.Escape | Tokens.Tag) {
+      return `tokens` in token && token.tokens
+        ? this.parser.parseInline(token.tokens)
+        : token.text
+    },
+
+    // ⬆️
     heading({ tokens, depth }: Tokens.Heading) {
       const text = this.parser.parseInline(tokens)
       const tag = `h${depth}`
@@ -140,7 +210,7 @@ export function initRenderer(opts: IOpts) {
 
     paragraph({ tokens }: Tokens.Paragraph): string {
       const text = this.parser.parseInline(tokens)
-      const isFigureImage = text.includes(`<figure`) && text.includes(`<img`)
+      const isFigureImage = text.includes(`<figure`) || text.includes(`<img`)
       const isEmpty = text.trim() === ``
       if (isFigureImage || isEmpty) {
         return text
@@ -180,7 +250,11 @@ export function initRenderer(opts: IOpts) {
 
     listitem(item: Tokens.ListItem): string {
       const prefix = isOrdered ? `${listIndex + 1}. ` : `• `
-      const content = item.tokens.map(t => (this[t.type as keyof Renderer] as <T>(token: T) => string)(t)).join(``)
+      const content = item.tokens
+        .map(t =>
+          (this[t.type as keyof Renderer] as <T>(token: T) => string)(t),
+        )
+        .join(``)
       return styledContent(`listitem`, `${prefix}${content}`, `li`)
     },
 
@@ -197,15 +271,35 @@ export function initRenderer(opts: IOpts) {
     },
 
     image({ href, title, text }: Tokens.Image): string {
-      const subText = styledContent(`figcaption`, transform(opts.legend!, text, title))
-      const figureStyles = styles(`figure`)
-      const imgStyles = styles(`image`)
-      return `<figure ${figureStyles}><img ${imgStyles} src="${href}" title="${title}" alt="${text}"/>${subText}</figure>`
+      href = cleanUrl(href)
+      if (title) {
+        // 如果存在标题，生成带有标题的图像 HTML 代码
+        const subText = styledContent(
+          `figcaption`,
+          transform(opts.legend!, text, title),
+        )
+        const figureStyles = styles(`figure`)
+        const imgStyles = styles(`image`)
+        return `<figure ${figureStyles}><img ${imgStyles} src="${href}" title="${title}" alt="${text}"/>${subText}</figure>`
+      }
+      else {
+        // 如果不存在标题，生成不带标题的图像 HTML 代码
+        let out = `<img src="${href}" alt="${text}"`
+        out += `>`
+        return out
+      }
     },
 
-    link({ href, title, text }: Tokens.Link): string {
+    link({ href, title, tokens }: Tokens.Link): string {
+      href = cleanUrl(href)
+      const text = this.parser.parseInline(tokens)
+
       if (href.startsWith(`https://mp.weixin.qq.com`)) {
         return `<a href="${href}" title="${title || text}" ${styles(`wx_link`)}>${text}</a>`
+      }
+      const isFigureImage = text.includes(`<figure`) || text.includes(`<img`)
+      if (isFigureImage) {
+        return `<a href="${href}" title="${title}">${text}</a>`
       }
       if (href === text) {
         return text
@@ -214,6 +308,7 @@ export function initRenderer(opts: IOpts) {
         const ref = addFootnote(title || text, href)
         return `<span ${styles(`link`)}>${text}<sup>[${ref}]</sup></span>`
       }
+      // return `<a href="${href}" title="${title || text}">${text}</a>`;
       return styledContent(`link`, text, `span`)
     },
 
@@ -226,14 +321,10 @@ export function initRenderer(opts: IOpts) {
     },
 
     table({ header, rows }: Tokens.Table): string {
-      const headerRow = header
-        .map(cell => this.tablecell(cell))
-        .join(``)
+      const headerRow = header.map(cell => this.tablecell(cell)).join(``)
       const body = rows
         .map((row) => {
-          const rowContent = row
-            .map(cell => this.tablecell(cell))
-            .join(``)
+          const rowContent = row.map(cell => this.tablecell(cell)).join(``)
           return styledContent(`tr`, rowContent)
         })
         .join(``)

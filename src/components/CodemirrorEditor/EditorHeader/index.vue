@@ -2,14 +2,13 @@
 import { Button } from '@/components/ui/button'
 import {
   Menubar,
-  MenubarContent,
-  MenubarItem,
-  MenubarMenu,
-  MenubarSeparator,
-  MenubarShortcut,
-  MenubarTrigger,
 } from '@/components/ui/menubar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+
 import {
   Select,
   SelectContent,
@@ -17,75 +16,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
 import {
-  altSign,
   codeBlockThemeOptions,
   colorOptions,
-  ctrlKey,
-  ctrlSign,
   fontFamilyOptions,
   fontSizeOptions,
   legendOptions,
-  shiftSign,
   themeOptions,
 } from '@/config'
 import { useDisplayStore, useStore } from '@/stores'
 import { mergeCss, solveWeChatImage } from '@/utils'
 import { ElNotification } from 'element-plus'
 import { Moon, Paintbrush, Sun } from 'lucide-vue-next'
+
 import { storeToRefs } from 'pinia'
-
-import { nextTick } from 'vue'
+import { nextTick, toRaw } from 'vue'
 import EditDropdown from './EditDropdown.vue'
-
 import FileDropdown from './FileDropdown.vue'
+import FormatDropdown from './FormatDropdown.vue'
 import HelpDropdown from './HelpDropdown.vue'
 
 import PostInfo from './PostInfo.vue'
 import StyleDropdown from './StyleDropdown.vue'
 
-const emit = defineEmits([`addFormat`, `formatContent`, `startCopy`, `endCopy`])
-
-const formatItems = [
-  {
-    label: `加粗`,
-    kbd: [ctrlSign, `B`],
-    emitArgs: [`addFormat`, `${ctrlKey}-B`],
-  },
-  {
-    label: `斜体`,
-    kbd: [ctrlSign, `I`],
-    emitArgs: [`addFormat`, `${ctrlKey}-I`],
-  },
-  {
-    label: `删除线`,
-    kbd: [ctrlSign, `D`],
-    emitArgs: [`addFormat`, `${ctrlKey}-D`],
-  },
-  {
-    label: `超链接`,
-    kbd: [ctrlSign, `K`],
-    emitArgs: [`addFormat`, `${ctrlKey}-K`],
-  },
-  {
-    label: `行内代码`,
-    kbd: [ctrlSign, `E`],
-    emitArgs: [`addFormat`, `${ctrlKey}-E`],
-  },
-  {
-    label: `格式化`,
-    kbd: [altSign, shiftSign, `F`],
-    emitArgs: [`formatContent`],
-  },
-] as const
+const emit = defineEmits([
+  `addFormat`,
+  `formatContent`,
+  `startCopy`,
+  `endCopy`,
+])
 
 const store = useStore()
 const displayStore = useDisplayStore()
 
-const { isDark, isCiteStatus, output, primaryColor } = storeToRefs(store)
+const { isDark, output, primaryColor } = storeToRefs(store)
 
-const { toggleDark, editorRefresh, citeStatusChanged } = store
+const { toggleDark, editorRefresh } = store
+
+const themeIcons = [Sun, Moon]
+function toggleTheme() {
+  store.toggleDark()
+}
 
 // 复制到微信公众号
 function copy() {
@@ -99,7 +70,10 @@ function copy() {
       const originalItems = tempDiv.querySelectorAll(`li > ul, li > ol`)
 
       originalItems.forEach((originalItem) => {
-        originalItem.parentElement!.insertAdjacentElement(`afterend`, originalItem)
+        originalItem.parentElement!.insertAdjacentElement(
+          `afterend`,
+          originalItem,
+        )
       })
 
       // 返回修改后的 HTML 字符串
@@ -158,7 +132,7 @@ function copy() {
 function customStyle() {
   displayStore.toggleShowCssEditor()
   setTimeout(() => {
-    store.cssEditor!.refresh()
+    toRaw(store.cssEditor)!.dispatch()
   }, 50)
 }
 </script>
@@ -168,35 +142,19 @@ function customStyle() {
     <Menubar class="menubar mr-auto">
       <FileDropdown />
 
-      <MenubarMenu>
-        <MenubarTrigger> 格式 </MenubarTrigger>
-        <MenubarContent class="w-60" align="start">
-          <MenubarItem
-            v-for="{ label, kbd, emitArgs } in formatItems"
-            :key="label"
-            @click="emitArgs[0] === 'addFormat' ? $emit(emitArgs[0], emitArgs[1]) : $emit(emitArgs[0])"
-          >
-            <el-icon class="mr-2 h-4 w-4" />
-            {{ label }}
-            <MenubarShortcut>
-              <kbd v-for="item in kbd" :key="item" class="mx-1 bg-gray-2 dark:bg-stone-9">
-                {{ item }}
-              </kbd>
-            </MenubarShortcut>
-          </MenubarItem>
-          <MenubarSeparator />
-          <MenubarItem @click="citeStatusChanged()">
-            <el-icon class="mr-2 h-4 w-4" :class="{ 'opacity-0': !isCiteStatus }">
-              <ElIconCheck />
-            </el-icon>
-            微信外链转底部引用
-          </MenubarItem>
-        </MenubarContent>
-      </MenubarMenu>
+      <FormatDropdown
+        @add-format="(cmd: string | number) => emit('addFormat', cmd)"
+        @format-content="() => emit('formatContent')" />
       <EditDropdown />
       <StyleDropdown />
       <HelpDropdown />
     </Menubar>
+
+    <Button variant="outline" class="mx-2" @click="toggleTheme">
+      <Transition name="slide-fade" mode="out-in">
+        <component :is="themeIcons[!isDark ? 0 : 1]" class="h-4 w-4" />
+      </Transition>
+    </Button>
 
     <Popover>
       <PopoverTrigger>
@@ -217,8 +175,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.theme === value,
                 }"
-                @click="store.themeChanged(value)"
-              >
+                @click="store.themeChanged(value)">
                 {{ label }}
               </Button>
             </div>
@@ -231,9 +188,10 @@ function customStyle() {
                 :key="value"
                 variant="outline"
                 class="w-full"
-                :class="{ 'border-black dark:border-white': store.fontFamily === value }"
-                @click="store.fontChanged(value)"
-              >
+                :class="{
+                  'border-black dark:border-white': store.fontFamily === value,
+                }"
+                @click="store.fontChanged(value)">
                 {{ label }}
               </Button>
             </div>
@@ -249,8 +207,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.fontSize === value,
                 }"
-                @click="store.sizeChanged(value)"
-              >
+                @click="store.sizeChanged(value)">
                 {{ desc }}
               </Button>
             </div>
@@ -264,16 +221,15 @@ function customStyle() {
                 class="w-full"
                 variant="outline"
                 :class="{
-                  'border-black dark:border-white': store.primaryColor === value,
+                  'border-black dark:border-white':
+                    store.primaryColor === value,
                 }"
-                @click="store.colorChanged(value)"
-              >
+                @click="store.colorChanged(value)">
                 <span
                   class="mr-2 inline-block h-4 w-4 rounded-full"
                   :style="{
                     background: value,
-                  }"
-                />
+                  }" />
                 {{ label }}
               </Button>
             </div>
@@ -285,8 +241,7 @@ function customStyle() {
                 v-model="primaryColor"
                 :teleported="false"
                 show-alpha
-                @change="store.colorChanged"
-              />
+                @change="store.colorChanged" />
             </div>
           </div>
           <div class="space-y-2">
@@ -294,8 +249,7 @@ function customStyle() {
             <div>
               <Select
                 v-model="store.codeBlockTheme"
-                @update:model-value="store.codeBlockThemeChanged"
-              >
+                @update:model-value="store.codeBlockThemeChanged">
                 <SelectTrigger>
                   <SelectValue placeholder="Select a fruit" />
                 </SelectTrigger>
@@ -303,8 +257,7 @@ function customStyle() {
                   <SelectItem
                     v-for="{ label, value } in codeBlockThemeOptions"
                     :key="label"
-                    :value="value"
-                  >
+                    :value="value">
                     {{ label }}
                   </SelectItem>
                 </SelectContent>
@@ -322,8 +275,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.legend === value,
                 }"
-                @click="store.legendChanged(value)"
-              >
+                @click="store.legendChanged(value)">
                 {{ label }}
               </Button>
             </div>
@@ -338,8 +290,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.isMacCodeBlock,
                 }"
-                @click="!store.isMacCodeBlock && store.macCodeBlockChanged()"
-              >
+                @click="!store.isMacCodeBlock && store.macCodeBlockChanged()">
                 开启
               </Button>
               <Button
@@ -348,8 +299,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': !store.isMacCodeBlock,
                 }"
-                @click="store.isMacCodeBlock && store.macCodeBlockChanged()"
-              >
+                @click="store.isMacCodeBlock && store.macCodeBlockChanged()">
                 关闭
               </Button>
             </div>
@@ -363,8 +313,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.isCiteStatus,
                 }"
-                @click="!store.isCiteStatus && store.citeStatusChanged()"
-              >
+                @click="!store.isCiteStatus && store.citeStatusChanged()">
                 开启
               </Button>
               <Button
@@ -373,8 +322,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': !store.isCiteStatus,
                 }"
-                @click="store.isCiteStatus && store.citeStatusChanged()"
-              >
+                @click="store.isCiteStatus && store.citeStatusChanged()">
                 关闭
               </Button>
             </div>
@@ -386,20 +334,20 @@ function customStyle() {
                 class="w-full"
                 variant="outline"
                 :class="{
-                  'border-black dark:border-white': displayStore.isShowCssEditor,
+                  'border-black dark:border-white':
+                    displayStore.isShowCssEditor,
                 }"
-                @click="!displayStore.isShowCssEditor && customStyle()"
-              >
+                @click="!displayStore.isShowCssEditor && customStyle()">
                 开启
               </Button>
               <Button
                 class="w-full"
                 variant="outline"
                 :class="{
-                  'border-black dark:border-white': !displayStore.isShowCssEditor,
+                  'border-black dark:border-white':
+                    !displayStore.isShowCssEditor,
                 }"
-                @click="displayStore.isShowCssEditor && customStyle()"
-              >
+                @click="displayStore.isShowCssEditor && customStyle()">
                 关闭
               </Button>
             </div>
@@ -413,8 +361,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.isEditOnLeft,
                 }"
-                @click="!store.isEditOnLeft && store.toggleEditOnLeft()"
-              >
+                @click="!store.isEditOnLeft && store.toggleEditOnLeft()">
                 左侧
               </Button>
               <Button
@@ -423,8 +370,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': !store.isEditOnLeft,
                 }"
-                @click="store.isEditOnLeft && store.toggleEditOnLeft()"
-              >
+                @click="store.isEditOnLeft && store.toggleEditOnLeft()">
                 右侧
               </Button>
             </div>
@@ -438,8 +384,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': !isDark,
                 }"
-                @click="store.toggleDark(false)"
-              >
+                @click="store.toggleDark(false)">
                 <Sun class="h-4 w-4" />
               </Button>
               <Button
@@ -448,8 +393,7 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': isDark,
                 }"
-                @click="store.toggleDark(true)"
-              >
+                @click="store.toggleDark(true)">
                 <Moon class="h-4 w-4" />
               </Button>
             </div>
@@ -457,10 +401,7 @@ function customStyle() {
           <div class="space-y-2">
             <h2>样式配置</h2>
             <div>
-              <Button
-                class="w-full"
-                @click="store.resetStyleConfirm()"
-              >
+              <Button class="w-full" @click="store.resetStyleConfirm()">
                 重置
               </Button>
             </div>

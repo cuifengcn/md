@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useDisplayStore } from '@/stores'
 import { checkImage, removeLeft } from '@/utils'
 
+import { javascript } from '@codemirror/lang-javascript'
+import { EditorView } from '@codemirror/view'
 import { UploadFilled } from '@element-plus/icons-vue'
-import CodeMirror from 'codemirror'
 
 import { ElMessage } from 'element-plus'
 import { nextTick, onBeforeMount, ref, watch } from 'vue'
@@ -62,7 +63,7 @@ const minioOSS = ref({
   secretKey: ``,
 })
 
-const formCustom = ref<{ code: string, editor: CodeMirror.EditorFromTextArea | null }>({
+const formCustom = ref<{ code: string, editor: EditorView | null }>({
   code:
     localStorage.getItem(`formCustomConfig`)
     || removeLeft(`
@@ -126,9 +127,14 @@ watch(
     if (val === `formCustom`) {
       nextTick(() => {
         const textarea = formCustomElInput.value!.$el.querySelector(`textarea`)!
-        formCustom.value.editor ||= CodeMirror.fromTextArea(textarea, {
-          mode: `javascript`,
-        })
+        formCustom.value.editor ||= new EditorView(
+          {
+            parent: textarea,
+            extensions: [
+              javascript().support,
+            ],
+          },
+        )
         // formCustom.value.editor.setValue(formCustom.value.code)
       })
     }
@@ -250,7 +256,7 @@ function saveQiniuConfiguration() {
 }
 
 function formCustomSave() {
-  const str = formCustom.value.editor!.getValue()
+  const str = formCustom.value.editor!.state.doc.toString()
   localStorage.setItem(`formCustomConfig`, str)
   ElMessage.success(`保存成功`)
 }
@@ -290,30 +296,13 @@ function uploadImage(params: { file: any }) {
 
       <el-tabs v-model="activeName">
         <el-tab-pane class="upload-panel" label="选择上传" name="upload">
-          <el-select
-            v-model="imgHost"
-            placeholder="请选择"
-            size="small"
-            @change="changeImgHost"
-          >
-            <el-option
-              v-for="item in options"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
+          <el-select v-model="imgHost" placeholder="请选择" size="small" @change="changeImgHost">
+            <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
           <el-upload
-            drag
-            multiple
-            action=""
-            :headers="{ 'Content-Type': 'multipart/form-data' }"
-            :show-file-list="false"
-            accept=".jpg, .jpeg, .png, .gif"
-            name="file"
-            :before-upload="beforeImageUpload"
-            :http-request="uploadImage"
-          >
+            drag multiple action="" :headers="{ 'Content-Type': 'multipart/form-data' }"
+            :show-file-list="false" accept=".jpg, .jpeg, .png, .gif" name="file" :before-upload="beforeImageUpload"
+            :http-request="uploadImage">
             <el-icon class="el-icon--upload">
               <UploadFilled />
             </el-icon>
@@ -363,35 +352,21 @@ function uploadImage(params: { file: any }) {
           </el-form>
         </el-tab-pane> -->
         <el-tab-pane class="github-panel" label="GitHub 图床" name="github">
-          <el-form
-            class="setting-form"
-            :model="formGitHub"
-            label-position="right"
-            label-width="150px"
-          >
+          <el-form class="setting-form" :model="formGitHub" label-position="right" label-width="150px">
             <el-form-item label="GitHub 仓库" :required="true">
-              <el-input
-                v-model.trim="formGitHub.repo"
-                placeholder="如：github.com/yanglbme/resource"
-              />
+              <el-input v-model.trim="formGitHub.repo" placeholder="如：github.com/yanglbme/resource" />
             </el-form-item>
             <el-form-item label="分支">
-              <el-input
-                v-model.trim="formGitHub.branch"
-                placeholder="如：release，可不填，默认 master"
-              />
+              <el-input v-model.trim="formGitHub.branch" placeholder="如：release，可不填，默认 master" />
             </el-form-item>
             <el-form-item label="Token" :required="true">
               <el-input
-                v-model.trim="formGitHub.accessToken"
-                show-password
-                placeholder="如：cc1d0c1426d0fd0902bd2d7184b14da61b8abc46"
-              />
+                v-model.trim="formGitHub.accessToken" show-password
+                placeholder="如：cc1d0c1426d0fd0902bd2d7184b14da61b8abc46" />
               <el-link
                 type="primary"
                 href="https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token"
-                target="_blank"
-              >
+                target="_blank">
                 如何获取 GitHub Token？
               </el-link>
             </el-form-item>
@@ -403,57 +378,30 @@ function uploadImage(params: { file: any }) {
           </el-form>
         </el-tab-pane>
         <el-tab-pane class="github-panel" label="阿里云 OSS" name="aliOSS">
-          <el-form
-            class="setting-form"
-            :model="formAliOSS"
-            label-position="right"
-            label-width="150px"
-          >
+          <el-form class="setting-form" :model="formAliOSS" label-position="right" label-width="150px">
             <el-form-item label="AccessKey ID" :required="true">
-              <el-input
-                v-model.trim="formAliOSS.accessKeyId"
-                placeholder="如：LTAI4GdoocsmdoxUf13ylbaNHk"
-              />
+              <el-input v-model.trim="formAliOSS.accessKeyId" placeholder="如：LTAI4GdoocsmdoxUf13ylbaNHk" />
             </el-form-item>
             <el-form-item label="AccessKey Secret" :required="true">
               <el-input
-                v-model.trim="formAliOSS.accessKeySecret"
-                show-password
-                placeholder="如：cc1d0c142doocs0902bd2d7md4b14da6ylbabc46"
-              />
+                v-model.trim="formAliOSS.accessKeySecret" show-password
+                placeholder="如：cc1d0c142doocs0902bd2d7md4b14da6ylbabc46" />
             </el-form-item>
             <el-form-item label="Bucket" :required="true">
               <el-input v-model.trim="formAliOSS.bucket" placeholder="如：doocs" />
             </el-form-item>
             <el-form-item label="Bucket 所在区域" :required="true">
-              <el-input
-                v-model.trim="formAliOSS.region"
-                placeholder="如：oss-cn-shenzhen"
-              />
+              <el-input v-model.trim="formAliOSS.region" placeholder="如：oss-cn-shenzhen" />
             </el-form-item>
             <el-form-item label="UseSSL" :required="true">
-              <el-switch
-                v-model="formAliOSS.useSSL"
-                active-text="是"
-                inactive-text="否"
-              />
+              <el-switch v-model="formAliOSS.useSSL" active-text="是" inactive-text="否" />
             </el-form-item>
             <el-form-item label="自定义 CDN 域名" :required="false">
-              <el-input
-                v-model.trim="formAliOSS.cdnHost"
-                placeholder="如：https://imagecdn.alidaodao.com，可不填"
-              />
+              <el-input v-model.trim="formAliOSS.cdnHost" placeholder="如：https://imagecdn.alidaodao.com，可不填" />
             </el-form-item>
             <el-form-item label="存储路径">
-              <el-input
-                v-model.trim="formAliOSS.path"
-                placeholder="如：img，可不填，默认为根目录"
-              />
-              <el-link
-                type="primary"
-                href="https://help.aliyun.com/document_detail/31883.html"
-                target="_blank"
-              >
+              <el-input v-model.trim="formAliOSS.path" placeholder="如：img，可不填，默认为根目录" />
+              <el-link type="primary" href="https://help.aliyun.com/document_detail/31883.html" target="_blank">
                 如何使用阿里云 OSS？
               </el-link>
             </el-form-item>
@@ -465,50 +413,27 @@ function uploadImage(params: { file: any }) {
           </el-form>
         </el-tab-pane>
         <el-tab-pane class="github-panel" label="腾讯云 COS" name="txCOS">
-          <el-form
-            class="setting-form"
-            :model="formTxCOS"
-            label-position="right"
-            label-width="150px"
-          >
+          <el-form class="setting-form" :model="formTxCOS" label-position="right" label-width="150px">
             <el-form-item label="SecretId" :required="true">
-              <el-input
-                v-model.trim="formTxCOS.secretId"
-                placeholder="如：AKIDnQp1w3DOOCSs8F5MDp9tdoocsmdUPonW3"
-              />
+              <el-input v-model.trim="formTxCOS.secretId" placeholder="如：AKIDnQp1w3DOOCSs8F5MDp9tdoocsmdUPonW3" />
             </el-form-item>
             <el-form-item label="SecretKey" :required="true">
               <el-input
-                v-model.trim="formTxCOS.secretKey"
-                show-password
-                placeholder="如：ukLmdtEJ9271f3DOocsMDsCXdS3YlbW0"
-              />
+                v-model.trim="formTxCOS.secretKey" show-password
+                placeholder="如：ukLmdtEJ9271f3DOocsMDsCXdS3YlbW0" />
             </el-form-item>
             <el-form-item label="Bucket" :required="true">
-              <el-input
-                v-model.trim="formTxCOS.bucket"
-                placeholder="如：doocs-3212520134"
-              />
+              <el-input v-model.trim="formTxCOS.bucket" placeholder="如：doocs-3212520134" />
             </el-form-item>
             <el-form-item label="Bucket 所在区域" :required="true">
               <el-input v-model.trim="formTxCOS.region" placeholder="如：ap-guangzhou" />
             </el-form-item>
             <el-form-item label="自定义 CDN 域名" :required="false">
-              <el-input
-                v-model.trim="formTxCOS.cdnHost"
-                placeholder="如：https://imagecdn.alidaodao.com，可不填"
-              />
+              <el-input v-model.trim="formTxCOS.cdnHost" placeholder="如：https://imagecdn.alidaodao.com，可不填" />
             </el-form-item>
             <el-form-item label="存储路径">
-              <el-input
-                v-model.trim="formTxCOS.path"
-                placeholder="如：img，可不填，默认根目录"
-              />
-              <el-link
-                type="primary"
-                href="https://cloud.tencent.com/document/product/436/38484"
-                target="_blank"
-              >
+              <el-input v-model.trim="formTxCOS.path" placeholder="如：img，可不填，默认根目录" />
+              <el-link type="primary" href="https://cloud.tencent.com/document/product/436/38484" target="_blank">
                 如何使用腾讯云 COS？
               </el-link>
             </el-form-item>
@@ -520,47 +445,27 @@ function uploadImage(params: { file: any }) {
           </el-form>
         </el-tab-pane>
         <el-tab-pane class="github-panel" label="七牛云 Kodo" name="qiniu">
-          <el-form
-            class="setting-form"
-            :model="formQiniu"
-            label-position="right"
-            label-width="150px"
-          >
+          <el-form class="setting-form" :model="formQiniu" label-position="right" label-width="150px">
             <el-form-item label="AccessKey" :required="true">
-              <el-input
-                v-model.trim="formQiniu.accessKey"
-                placeholder="如：6DD3VaLJ_SQgOdoocsyTV_YWaDmdnL2n8EGx7kG"
-              />
+              <el-input v-model.trim="formQiniu.accessKey" placeholder="如：6DD3VaLJ_SQgOdoocsyTV_YWaDmdnL2n8EGx7kG" />
             </el-form-item>
             <el-form-item label="SecretKey" :required="true">
               <el-input
-                v-model.trim="formQiniu.secretKey"
-                show-password
-                placeholder="如：qgZa5qrvDOOcsmdKStD1oCjZ9nB7MDvJUs_34SIm"
-              />
+                v-model.trim="formQiniu.secretKey" show-password
+                placeholder="如：qgZa5qrvDOOcsmdKStD1oCjZ9nB7MDvJUs_34SIm" />
             </el-form-item>
             <el-form-item label="Bucket" :required="true">
               <el-input v-model.trim="formQiniu.bucket" placeholder="如：md" />
             </el-form-item>
             <el-form-item label="Bucket 对应域名" :required="true">
-              <el-input
-                v-model.trim="formQiniu.domain"
-                placeholder="如：https://images.123ylb.cn"
-              />
+              <el-input v-model.trim="formQiniu.domain" placeholder="如：https://images.123ylb.cn" />
             </el-form-item>
             <el-form-item label="存储区域" :required="false">
               <el-input v-model.trim="formQiniu.region" placeholder="如：z2，可不填" />
             </el-form-item>
             <el-form-item label="存储路径" :required="false">
-              <el-input
-                v-model.trim="formQiniu.path"
-                placeholder="如：img，可不填，默认为根目录"
-              />
-              <el-link
-                type="primary"
-                href="https://developer.qiniu.com/kodo"
-                target="_blank"
-              >
+              <el-input v-model.trim="formQiniu.path" placeholder="如：img，可不填，默认为根目录" />
+              <el-link type="primary" href="https://developer.qiniu.com/kodo" target="_blank">
                 如何使用七牛云 Kodo？
               </el-link>
             </el-form-item>
@@ -572,21 +477,12 @@ function uploadImage(params: { file: any }) {
           </el-form>
         </el-tab-pane>
         <el-tab-pane class="github-panel" label="MinIO" name="minio">
-          <el-form
-            class="setting-form"
-            :model="minioOSS"
-            label-position="right"
-            label-width="150px"
-          >
+          <el-form class="setting-form" :model="minioOSS" label-position="right" label-width="150px">
             <el-form-item label="Endpoint" :required="true">
               <el-input v-model.trim="minioOSS.endpoint" placeholder="如：play.min.io" />
             </el-form-item>
             <el-form-item label="Port" :required="false">
-              <el-input
-                v-model.trim="minioOSS.port"
-                type="number"
-                placeholder="如：9000，可不填，http 默认为 80，https 默认为 443"
-              />
+              <el-input v-model.trim="minioOSS.port" type="number" placeholder="如：9000，可不填，http 默认为 80，https 默认为 443" />
             </el-form-item>
             <el-form-item label="UseSSL" :required="true">
               <el-switch v-model="minioOSS.useSSL" active-text="是" inactive-text="否" />
@@ -600,10 +496,8 @@ function uploadImage(params: { file: any }) {
             <el-form-item label="SecretKey" :required="true">
               <el-input v-model.trim="minioOSS.secretKey" placeholder="如：asdasdasd" />
               <el-link
-                type="primary"
-                href="http://docs.minio.org.cn/docs/master/minio-client-complete-guide"
-                target="_blank"
-              >
+                type="primary" href="http://docs.minio.org.cn/docs/master/minio-client-complete-guide"
+                target="_blank">
                 如何使用 MinIO？
               </el-link>
             </el-form-item>
@@ -618,18 +512,9 @@ function uploadImage(params: { file: any }) {
           <el-form class="setting-form" :model="formCustom" label-position="right">
             <el-form-item label="" :required="true">
               <el-input
-                ref="formCustomElInput"
-                v-model="formCustom.code"
-                class="formCustomElInput"
-                type="textarea"
-                resize="none"
-                placeholder="Your custom code here."
-              />
-              <el-link
-                type="primary"
-                href="https://github.com/doocs/md#自定义上传逻辑"
-                target="_blank"
-              >
+                ref="formCustomElInput" v-model="formCustom.code" class="formCustomElInput" type="textarea"
+                resize="none" placeholder="Your custom code here." />
+              <el-link type="primary" href="https://github.com/doocs/md#自定义上传逻辑" target="_blank">
                 参数详情？
               </el-link>
             </el-form-item>

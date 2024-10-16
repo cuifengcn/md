@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ArticleSubmit from '@/components/article/ArticleSubmit.vue'
+import ArticleSync from '@/components/article/ArticleSync.vue'
 import {
   Dialog,
   DialogContent,
@@ -6,17 +8,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useStore } from '@/stores'
-import { storeToRefs } from 'pinia'
+import { useDisplayStore, useStore } from '@/stores'
 
+import { ElMessage } from 'element-plus'
+import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 
+interface Form {
+  title?: string
+  desc?: string
+  thumb?: string
+  content?: string
+  auto?: {
+    title?: string
+    desc?: string
+    thumb?: string
+    content?: string
+  }
+}
+
 const store = useStore()
+const displayStore = useDisplayStore()
 const { output } = storeToRefs(store)
 
 const dialogVisible = ref(false)
 
-const form = ref<any>({
+const form = ref<Form>({
   title: ``,
   desc: ``,
   thumb: ``,
@@ -24,16 +41,19 @@ const form = ref<any>({
   auto: {},
 })
 
+const selectedAccounts = ref([])
+
 function prePost() {
   let auto = {}
   try {
     auto = {
-      thumb: document.querySelector<HTMLImageElement>(`#output img`)?.src,
-      title: [1, 2, 3, 4, 5, 6]
-        .map(h => document.querySelector(`#output h${h}`)!)
-        .filter(h => h)[0]
-        .textContent,
-      desc: document.querySelector(`#output p`)!.textContent,
+      thumb: document.querySelector<HTMLImageElement>(`#output img`)?.src || ``,
+      title:
+        [1, 2, 3, 4, 5, 6]
+          .map(h => document.querySelector(`#output h${h}`)!)
+          // eslint-disable-next-line antfu/consistent-chaining
+          .filter(h => h)[0].textContent || ``,
+      desc: document.querySelector(`#output p`)!.textContent || ``,
       content: output.value,
     }
   }
@@ -47,21 +67,25 @@ function prePost() {
   dialogVisible.value = true
 }
 
-declare global {
-  interface Window {
-    syncPost: (data: { thumb: string, title: string, desc: string, content: string }) => void
-  }
-}
-
 function post() {
-  dialogVisible.value = false;
-  // 使用 window.$syncer 可以检测是否安装插件
-  (window.syncPost)({
-    thumb: form.value.thumb || form.value.auto.thumb,
-    title: form.value.title || form.value.auto.title,
-    desc: form.value.desc || form.value.auto.desc,
-    content: form.value.content || form.value.auto.content,
-  })
+  if (!form.value.title) {
+    ElMessage.warning(`请输入标题`)
+    return
+  }
+  if (!form.value.desc) {
+    ElMessage.warning(`请输入描述`)
+    return
+  }
+  if (!form.value.content) {
+    ElMessage.warning(`文章内容为空`)
+    return
+  }
+  if (!window.$syncer) {
+    ElMessage.warning(`请先安装插件`)
+    return
+  }
+  displayStore.isShowArticleSubmitDialog = true
+  dialogVisible.value = false
 }
 
 function onUpdate(val: boolean) {
@@ -75,19 +99,17 @@ function onUpdate(val: boolean) {
   <Button variant="outline" @click="prePost">
     发布
   </Button>
+  <ArticleSubmit :form="form" :selected-accounts="selectedAccounts" />
 
   <Dialog :open="dialogVisible" @update:open="onUpdate">
     <DialogContent>
       <DialogHeader>
         <DialogTitle>发布</DialogTitle>
       </DialogHeader>
-
       <el-alert
-        class="mb-4"
         title="注：此功能由第三方浏览器插件支持，本平台不保证安全性。"
         type="info"
-        show-icon
-      />
+        show-icon />
       <el-form class="postInfo" label-width="50" :model="form">
         <el-form-item label="封面">
           <el-input v-model="form.thumb" placeholder="自动提取第一张图" />
@@ -100,10 +122,10 @@ function onUpdate(val: boolean) {
             v-model="form.desc"
             type="textarea"
             :rows="4"
-            placeholder="自动提取第一个段落"
-          />
+            placeholder="自动提取第一个段落" />
         </el-form-item>
       </el-form>
+      <ArticleSync v-model="selectedAccounts" :form="form" />
 
       <DialogFooter>
         <Button variant="outline" @click="dialogVisible = false">

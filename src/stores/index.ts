@@ -1,17 +1,156 @@
+import type { AiModel, Article } from '@/types'
+import type { MyEditorView } from '@/utils/codeMirrorUtil/editor'
+import type { Extension } from '@codemirror/state'
+import type { ReadTimeResults } from 'reading-time'
 import DEFAULT_CONTENT from '@/assets/example/markdown.md?raw'
 import DEFAULT_CSS_CONTENT from '@/assets/example/theme-css.txt?raw'
-import { altKey, codeBlockThemeOptions, colorOptions, fontFamilyOptions, fontSizeOptions, legendOptions, shiftKey, themeMap, themeOptions } from '@/config'
-import { addPrefix, css2json, customCssWithTemplate, customizeTheme, downloadMD, exportHTML, formatDoc } from '@/utils'
-import { initRenderer } from '@/utils/renderer'
-import { useDark, useStorage, useToggle } from '@vueuse/core'
+import {
+  codeBlockThemeOptions,
+  colorOptions,
+  fontFamilyOptions,
+  fontSizeOptions,
+  legendOptions,
+  themeMap,
+  themeOptions,
+} from '@/config'
+import {
+  addPrefix,
+  css2json,
+  customCssWithTemplate,
+  customizeTheme,
+  downloadMD,
+  exportHTML,
+  formatDoc,
+} from '@/utils'
+import {
+  cssThemeCompartment,
+  initCssEditor,
+  initCssEditorExtensions,
+} from '@/utils/codeMirrorUtil' // 确保这个导入路径正确
 
-import CodeMirror from 'codemirror'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { initRenderer } from '@/utils/renderer'
+import { EditorState } from '@codemirror/state'
+import { useDark, useStorage, useToggle } from '@vueuse/core'
+import { ElLoading, ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
 import { defineStore } from 'pinia'
-import { computed, markRaw, onMounted, ref, toRaw, watch } from 'vue'
+import readingTime from 'reading-time'
+import { ayuLight, barf } from 'thememirror'
+import { v4 as uuidv4 } from 'uuid'
+import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
 
+// 通过将codemirror中的MeasureRequest进行export解决
 export const useStore = defineStore(`store`, () => {
+  const articles = useStorage<Array<Article>>(`articles`, [
+    {
+      id: uuidv4(),
+      title: `默认文章`,
+      content: DEFAULT_CONTENT,
+      createTs: Date.now(),
+    },
+  ])
+  const currentArticleId = useStorage<string | null>(
+    `currentArticleId`,
+    articles.value[0]?.id,
+  )
+
+  const currentArticle = computed(() => {
+    if (!currentArticleId.value) {
+      return undefined
+    }
+    else {
+      return articles.value.find(a => a.id === currentArticleId.value)
+    }
+  })
+
+  // 内容编辑器编辑器
+  const editor = ref<MyEditorView | null>(null)
+  const editorExtensions = ref<Extension[]>()
+  const editorReadTime = ref<ReadTimeResults>()
+
+  const selectArticle = async (id: string) => {
+    if (id === currentArticle.value?.id) {
+      return
+    }
+    const loading = ElLoading.service({
+      lock: true,
+      text: `载入中`,
+      background: `rgba(0, 0, 0, 0.1)`,
+    })
+    await new Promise(resolve => setTimeout(resolve, 200))
+    currentArticleId.value = id
+    toRaw(editor.value)?.setState(
+      EditorState.create({
+        doc: currentArticle.value?.content || ``,
+        extensions: toRaw(editorExtensions.value),
+      }),
+    )
+    // eslint-disable-next-line ts/no-use-before-define
+    editorRefresh()
+    loading.close()
+    toRaw(editor.value)?.focus()
+  }
+
+  const addArticle = async (props: Partial<Article>) => {
+    props.id ??= uuidv4()
+    props.createTs ??= Date.now()
+    if (articles.value.find(a => a.id === props.id)) {
+      articles.value.forEach((a) => {
+        if (a.id === props.id) {
+          Object.assign(a, props)
+        }
+      })
+    }
+    else {
+      // 将此文章添加到开头
+      articles.value.unshift({
+        id: props.id,
+        ...props,
+      })
+      await new Promise(resolve => setTimeout(resolve, 300)) // 等待动画完成
+      selectArticle(props.id)
+    }
+  }
+  const removeArticle = async (id: string) => {
+    const ANIMATION_DELAY = 300 // ms
+    const getNextArticleId = (index: number): string | undefined => {
+      const nextIndex
+        = index === articles.value.length - 1 ? index - 1 : index + 1
+      return articles.value[nextIndex]?.id
+    }
+
+    const waitForAnimation = () =>
+      new Promise(resolve => setTimeout(resolve, ANIMATION_DELAY))
+
+    const index = articles.value.findIndex(a => a.id === id)
+
+    if (currentArticle.value?.id === id) {
+      if (articles.value.length === 1) {
+        articles.value.splice(index, 1)
+        currentArticleId.value = undefined
+      }
+      else {
+        const newId = getNextArticleId(index)
+        if (newId) {
+          articles.value.splice(index, 1)
+          await waitForAnimation()
+          await selectArticle(newId)
+        }
+      }
+    }
+    else {
+      await waitForAnimation()
+      articles.value.splice(index, 1)
+    }
+  }
+
+  const saveArticles = () => {
+    if (currentArticle.value) {
+      addArticle(currentArticle.value)
+    }
+    localStorage.setItem(`articles`, JSON.stringify(articles.value))
+  }
+
   // 是否开启深色模式
   const isDark = useDark()
   const toggleDark = useToggle(isDark)
@@ -31,7 +170,10 @@ export const useStore = defineStore(`store`, () => {
   const output = ref(``)
 
   // 文本字体
-  const theme = useStorage<keyof typeof themeMap>(addPrefix(`theme`), themeOptions[0].value)
+  const theme = useStorage<keyof typeof themeMap>(
+    addPrefix(`theme`),
+    themeOptions[0].value,
+  )
   // 文本字体
   const fontFamily = useStorage(`fonts`, fontFamilyOptions[0].value)
   // 文本大小
@@ -39,22 +181,28 @@ export const useStore = defineStore(`store`, () => {
   // 主色
   const primaryColor = useStorage(`color`, colorOptions[0].value)
   // 代码块主题
-  const codeBlockTheme = useStorage(`codeBlockTheme`, codeBlockThemeOptions[23].value)
+  const codeBlockTheme = useStorage(
+    `codeBlockTheme`,
+    codeBlockThemeOptions[23].value,
+  )
   // 图注格式
   const legend = useStorage(`legend`, legendOptions[3].value)
 
   const fontSizeNumber = computed(() => fontSize.value.replace(`px`, ``))
 
-  // 内容编辑器编辑器
-  const editor = ref<CodeMirror.EditorFromTextArea | null>(null)
-  // 编辑区域内容
-  const editorContent = useStorage(`__editor_content`, DEFAULT_CONTENT)
-
   // 格式化文档
   const formatContent = () => {
-    formatDoc((editor.value!).getValue()).then((doc) => {
-      editorContent.value = doc;
-      (editor.value!).setValue(doc)
+    formatDoc(editor.value!.state.doc.toString()).then((doc) => {
+      if (currentArticle.value) {
+        currentArticle.value.content = doc
+      }
+      if (editor.value) {
+        toRaw(editor.value).dispatch(
+          toRaw(editor.value).state.update({
+            changes: { from: 0, to: doc.length, insert: doc },
+          }),
+        )
+      }
     })
   }
 
@@ -76,9 +224,24 @@ export const useStore = defineStore(`store`, () => {
   }
 
   // 自义定 CSS 编辑器
-  const cssEditor = ref<CodeMirror.EditorFromTextArea | null>(null)
-  const setCssEditorValue = (content: string) => {
-    (cssEditor.value!).setValue(content)
+  const cssEditor = ref<MyEditorView | null>(null)
+  const cssEditorExtensions = ref<Extension[]>()
+  const setCssEditorValue = async (content: string) => {
+    if (cssEditor.value) {
+      const loading = ElLoading.service({
+        lock: true,
+        text: `载入中`,
+        background: `rgba(0, 0, 0, 0.1)`,
+      })
+      await new Promise(resolve => setTimeout(resolve, 200))
+      toRaw(cssEditor.value).setState(
+        EditorState.create({
+          doc: content,
+          extensions: toRaw(cssEditorExtensions.value),
+        }),
+      )
+      loading.close()
+    }
   }
   // 自定义 CSS 内容
   const cssContent = useStorage(`__css_content`, DEFAULT_CSS_CONTENT)
@@ -97,9 +260,10 @@ export const useStore = defineStore(`store`, () => {
     // 清空过往历史记录
     cssContent.value = ``
   })
-  const getCurrentTab = () => cssContentConfig.value.tabs.find((tab) => {
-    return tab.name === cssContentConfig.value.active
-  })!
+  const getCurrentTab = () =>
+    cssContentConfig.value.tabs.find((tab) => {
+      return tab.name === cssContentConfig.value.active
+    })!
   const tabChanged = (name: string) => {
     cssContentConfig.value.active = name
     const content = cssContentConfig.value.tabs.find((tab) => {
@@ -130,7 +294,14 @@ export const useStore = defineStore(`store`, () => {
   }
 
   const renderer = initRenderer({
-    theme: customCssWithTemplate(css2json(getCurrentTab().content), primaryColor.value, customizeTheme(themeMap[theme.value], { fontSize: fontSizeNumber.value, color: primaryColor.value })),
+    theme: customCssWithTemplate(
+      css2json(getCurrentTab().content),
+      primaryColor.value,
+      customizeTheme(themeMap[theme.value], {
+        fontSize: fontSizeNumber.value,
+        color: primaryColor.value,
+      }),
+    ),
     fonts: fontFamily.value,
     size: fontSizeNumber.value,
   })
@@ -139,8 +310,11 @@ export const useStore = defineStore(`store`, () => {
   const editorRefresh = () => {
     codeThemeChange()
     renderer.reset({ status: isCiteStatus.value, legend: legend.value })
-    let outputTemp = marked.parse(editor.value!.getValue()) as string
 
+    let outputTemp = marked.parse(
+      editor.value?.state.doc.toString() || ``,
+    ) as string
+    const originTemp = outputTemp
     // 去除第一行的 margin-top
     outputTemp = outputTemp.replace(/(style=".*?)"/, `$1;margin-top: 0"`)
     // 引用脚注
@@ -170,12 +344,26 @@ export const useStore = defineStore(`store`, () => {
     }
 
     output.value = outputTemp
+    // 更新readtime
+    const tempDiv = document.createElement(`div`)
+    tempDiv.innerHTML = originTemp
+    editorReadTime.value = readingTime(tempDiv.textContent || ``)
   }
 
   // 更新 CSS
   const updateCss = () => {
-    const json = css2json(cssEditor.value!.getValue())
-    const newTheme = customCssWithTemplate(json, primaryColor.value, customizeTheme(themeMap[theme.value], { fontSize: fontSizeNumber.value, color: primaryColor.value }))
+    if (!cssEditor.value) {
+      return
+    }
+    const json = css2json(cssEditor.value!.state.doc.toString())
+    const newTheme = customCssWithTemplate(
+      json,
+      primaryColor.value,
+      customizeTheme(themeMap[theme.value], {
+        fontSize: fontSizeNumber.value,
+        color: primaryColor.value,
+      }),
+    )
     renderer.setOptions({
       theme: newTheme,
     })
@@ -183,46 +371,23 @@ export const useStore = defineStore(`store`, () => {
   }
   // 初始化 CSS 编辑器
   onMounted(() => {
-    const cssEditorDom = document.querySelector<HTMLTextAreaElement>(`#cssEditor`)!
-    cssEditorDom.value = getCurrentTab().content
-    const theme = isDark.value ? `darcula` : `xq-light`
-    cssEditor.value = markRaw(
-      CodeMirror.fromTextArea(cssEditorDom, {
-        mode: `css`,
-        theme,
-        lineNumbers: false,
-        lineWrapping: true,
-        styleActiveLine: true,
-        matchBrackets: true,
-        autofocus: true,
-        extraKeys: {
-          [`${shiftKey}-${altKey}-F`]: function autoFormat(editor: CodeMirror.Editor) {
-            formatDoc(editor.getValue(), `css`).then((doc) => {
-              getCurrentTab().content = doc
-              editor.setValue(doc)
-            })
-          },
-        },
-      } as never),
-    )
-
-    // 自动提示
-    cssEditor.value.on(`keyup`, (cm, e) => {
-      if ((e.keyCode >= 65 && e.keyCode <= 90) || e.keyCode === 189) {
-        (cm as any).showHint(e)
-      }
-    })
-
-    // 实时保存
-    cssEditor.value.on(`update`, () => {
+    const cssEditorDom = document.querySelector<Element>(`#cssEditor`)!
+    cssEditorExtensions.value = initCssEditorExtensions((_) => {
       updateCss()
-      getCurrentTab().content = cssEditor.value!.getValue()
+      getCurrentTab().content = cssEditor.value?.state.doc.toString() || ``
     })
-  })
-
-  watch(isDark, () => {
-    const theme = isDark.value ? `darcula` : `xq-light`
-    toRaw(cssEditor.value)?.setOption?.(`theme`, theme)
+    cssEditor.value = initCssEditor(cssEditorDom, {
+      extensions: toRaw(cssEditorExtensions.value),
+      initContent: getCurrentTab().content,
+    })
+    const watchTheme = () => {
+      const theme = isDark.value ? barf : ayuLight
+      toRaw(cssEditor.value)?.dispatch({
+        effects: cssThemeCompartment.reconfigure(theme),
+      })
+    }
+    watchTheme()
+    watch(isDark, watchTheme)
   })
 
   // 重置样式
@@ -249,28 +414,48 @@ export const useStore = defineStore(`store`, () => {
         },
       ],
     }
-
-    cssEditor.value!.setValue(DEFAULT_CSS_CONTENT)
+    if (cssEditor.value) {
+      const state = cssEditor.value.state
+      toRaw(cssEditor.value).dispatch(
+        state.update({
+          changes: {
+            from: 0,
+            to: state.doc.length,
+            insert: DEFAULT_CSS_CONTENT,
+          },
+        }),
+      )
+    }
 
     updateCss()
     editorRefresh()
   }
 
   // 为函数添加刷新编辑器的功能
-  const withAfterRefresh = (fn: (...rest: any[]) => void) => (...rest: any[]) => {
-    fn(...rest)
-    editorRefresh()
-  }
+  const withAfterRefresh
+    = (fn: (...rest: any[]) => void) =>
+      (...rest: any[]) => {
+        fn(...rest)
+        editorRefresh()
+      }
 
   const getTheme = (size: string, color: string) => {
     const newTheme = themeMap[theme.value]
     const fontSize = size.replace(`px`, ``)
-    return customCssWithTemplate(css2json(getCurrentTab().content), color, customizeTheme(newTheme, { fontSize, color }))
+    return customCssWithTemplate(
+      css2json(getCurrentTab().content),
+      color,
+      customizeTheme(newTheme, { fontSize, color }),
+    )
   }
 
   const themeChanged = withAfterRefresh((newTheme: keyof typeof themeMap) => {
     renderer.setOptions({
-      theme: customCssWithTemplate(css2json(getCurrentTab().content), primaryColor.value, customizeTheme(themeMap[newTheme], { fontSize: fontSizeNumber.value })),
+      theme: customCssWithTemplate(
+        css2json(getCurrentTab().content),
+        primaryColor.value,
+        customizeTheme(themeMap[newTheme], { fontSize: fontSizeNumber.value }),
+      ),
     })
     theme.value = newTheme
   })
@@ -326,7 +511,7 @@ export const useStore = defineStore(`store`, () => {
 
   // 导出编辑器内容到本地
   const exportEditorContent2MD = () => {
-    downloadMD(editor.value!.getValue())
+    downloadMD(editor.value!.state.doc.toString())
   }
 
   // 导入 Markdown 文档
@@ -344,9 +529,17 @@ export const useStore = defineStore(`store`, () => {
 
       const reader = new FileReader()
       reader.readAsText(file)
+      // TODO: 导入应该是新文件
       reader.onload = (event) => {
-        (editor.value!).setValue((event.target !).result as string)
-        ElMessage.success(`文档导入成功`)
+        if (editor.value) {
+          toRaw(editor.value)?.setState(
+            EditorState.create({
+              doc: event.target!.result as string,
+              extensions: toRaw(editorExtensions.value),
+            }),
+          )
+          ElMessage.success(`文档导入成功`)
+        }
       }
     }
 
@@ -357,16 +550,12 @@ export const useStore = defineStore(`store`, () => {
 
   // 重置样式
   const resetStyleConfirm = () => {
-    ElMessageBox.confirm(
-      `此操作将丢失本地自定义样式，是否继续？`,
-      `提示`,
-      {
-        confirmButtonText: `确定`,
-        cancelButtonText: `取消`,
-        type: `warning`,
-        center: true,
-      },
-    )
+    ElMessageBox.confirm(`此操作将丢失本地自定义样式，是否继续？`, `提示`, {
+      confirmButtonText: `确定`,
+      cancelButtonText: `取消`,
+      type: `warning`,
+      center: true,
+    })
       .then(() => {
         resetStyle()
         ElMessage({
@@ -375,11 +564,18 @@ export const useStore = defineStore(`store`, () => {
         })
       })
       .catch(() => {
-        (editor.value!).focus()
+        toRaw(editor.value)!.focus()
       })
   }
 
   return {
+    articles,
+    currentArticle,
+    selectArticle,
+    addArticle,
+    removeArticle,
+    saveArticles,
+
     isDark,
     toggleDark,
 
@@ -392,6 +588,8 @@ export const useStore = defineStore(`store`, () => {
 
     output,
     editor,
+    editorExtensions,
+    editorReadTime,
     cssEditor,
     theme,
     fontFamily,
@@ -417,7 +615,6 @@ export const useStore = defineStore(`store`, () => {
     importMarkdownContent,
 
     resetStyleConfirm,
-    editorContent,
 
     cssContentConfig,
     addCssContentTab,
@@ -441,6 +638,12 @@ export const useDisplayStore = defineStore(`display`, () => {
   const isShowUploadImgDialog = ref(false)
   const toggleShowUploadImgDialog = useToggle(isShowUploadImgDialog)
 
+  // 是否显示新增文章对话框
+  const isShowAddArticleDialog = ref(false)
+
+  // 是否展示文章提交对话框
+  const isShowArticleSubmitDialog = ref(false)
+
   return {
     isShowCssEditor,
     toggleShowCssEditor,
@@ -448,5 +651,72 @@ export const useDisplayStore = defineStore(`display`, () => {
     toggleShowInsertFormDialog,
     isShowUploadImgDialog,
     toggleShowUploadImgDialog,
+    isShowAddArticleDialog,
+    isShowArticleSubmitDialog,
+  }
+})
+
+export const useAiModelStore = defineStore(`AiModel`, () => {
+  const models = reactive<AiModel[]>([
+    {
+      name: `glm-4-flash`,
+      from: `bigmodel`,
+      desc: `智谱AI首个免费API, 零成本调用大模型`,
+      baseUrl: `https://open.bigmodel.cn/api/paas/v4`,
+      apiKey: ``,
+      refUrl: `https://bigmodel.cn/usercenter/apikeys`,
+    },
+    {
+      name: `glm-4-plus`,
+      from: `bigmodel`,
+      desc: `智谱清言的高智能旗舰: 性能全面提升，长文本和复杂任务能力显著增强`,
+      baseUrl: `https://open.bigmodel.cn/api/paas/v4`,
+      apiKey: ``,
+      refUrl: `https://bigmodel.cn/usercenter/apikeys`,
+    },
+    {
+      name: `deepseek-chat`,
+      from: `deepseek`,
+      desc: `北京深度求索人工智能基础技术研究有限公司推出的深度合成服务算法`,
+      baseUrl: `https://api.deepseek.com`,
+      apiKey: ``,
+      refUrl: `https://platform.deepseek.com/api_keys`,
+    },
+    {
+      name: `ChatGPT-3.5`,
+      from: `openai`,
+      desc: `OpenAI 的 GPT-3.5 模型`,
+      baseUrl: `https://api.openai.com/v1`,
+      apiKey: ``,
+      refUrl: `https://platform.openai.com/api-keys`,
+    },
+  ])
+
+  const selectedAiModel = useStorage<AiModel>(
+    `selectedAiModel`,
+    toRaw(models[0]),
+  )
+
+  // 显示选择模型面板
+  const isShowSelectAiModelDialog = ref(false)
+  const toggleShowSelectAiModelDialog = useToggle(isShowSelectAiModelDialog)
+
+  const selectAiModel = (model: AiModel) => {
+    ElMessage.success(`已选择 ${model.name}`)
+    selectedAiModel.value = model
+  }
+
+  // 显示生成面板
+  const isShowPromptDialog = ref(false)
+  const toggleShowPromptDialog = useToggle(isShowPromptDialog)
+
+  return {
+    models,
+    selectedAiModel,
+    isShowSelectAiModelDialog,
+    toggleShowSelectAiModelDialog,
+    selectAiModel,
+    isShowPromptDialog,
+    toggleShowPromptDialog,
   }
 })

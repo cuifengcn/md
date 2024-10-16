@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import type MyEditorView from '@/utils/codeMirrorUtil/editor'
 import type { ComponentPublicInstance } from 'vue'
+import PromptDialog from '@/components/ai/PromptDialog.vue'
 import CssEditor from '@/components/CodemirrorEditor/CssEditor.vue'
+import EditorFooter from '@/components/CodemirrorEditor/EditorFooter/index.vue'
+
 import EditorHeader from '@/components/CodemirrorEditor/EditorHeader/index.vue'
 import InsertFormDialog from '@/components/CodemirrorEditor/InsertFormDialog.vue'
 import UploadImgDialog from '@/components/CodemirrorEditor/UploadImgDialog.vue'
-
 import RunLoading from '@/components/RunLoading.vue'
+
+import SideToolBar from '@/components/SideToolBar/index.vue'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -14,26 +19,35 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { SelectionToolbar } from '@/components/ui/toolbar'
+import { altSign, shiftSign } from '@/config'
+import { useAiModelStore, useDisplayStore, useStore } from '@/stores'
 
-import { altKey, altSign, ctrlKey, shiftKey, shiftSign } from '@/config'
-import { useDisplayStore, useStore } from '@/stores'
+import { AiGenerateType } from '@/types'
+
+import { checkImage, toBase64 } from '@/utils'
 import {
-  checkImage,
-  formatDoc,
-  toBase64,
-} from '@/utils'
+  initCodemirrorEditor,
+  initEditorExtensions,
+  keymapActions,
+} from '@/utils/codeMirrorUtil'
 import fileApi from '@/utils/file'
-import CodeMirror from 'codemirror'
 
+import { Icon } from '@iconify/vue'
 import { ElCol, ElMessage } from 'element-plus'
-
+import { debounce } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
-
-import { onMounted, ref, toRaw, watch } from 'vue'
+import {
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  toRaw,
+} from 'vue'
 
 const store = useStore()
 const displayStore = useDisplayStore()
-const { isDark, output, editor, editorContent } = storeToRefs(store)
+const aiModelStore = useAiModelStore()
+const { output, editor, editorExtensions, currentArticle } = storeToRefs(store)
 const { isShowCssEditor } = storeToRefs(displayStore)
 
 const {
@@ -45,65 +59,42 @@ const {
   resetStyleConfirm,
 } = store
 
-const {
-  toggleShowInsertFormDialog,
-  toggleShowUploadImgDialog,
-} = displayStore
+const { toggleShowInsertFormDialog, toggleShowUploadImgDialog } = displayStore
 
 const isImgLoading = ref(false)
-const timeout = ref<NodeJS.Timeout>()
 
 const preview = ref<typeof ElCol | null>(null)
+const scrollingTarget = ref<`editor` | `preview` | null>(null)
+const scrollingTimeout = ref<NodeJS.Timeout>()
+
+// ai dialog参数
+const initGenerateType = ref<AiGenerateType>()
 
 // 使浏览区与编辑区滚动条建立同步联系
-function leftAndRightScroll() {
-  const scrollCB = (text: string) => {
-    let source: HTMLElement
-    let target: HTMLElement
-
-    clearTimeout(timeout.value)
-    if (text === `preview`) {
-      source = preview.value!.$el
-      target = document.querySelector<HTMLElement>(`.CodeMirror-scroll`)!
-
-      editor.value!.off(`scroll`, editorScrollCB)
-      timeout.value = setTimeout(() => {
-        editor.value!.on(`scroll`, editorScrollCB)
-      }, 300)
+function listenPreviewScroll() {
+  function previewScrollCB() {
+    if (scrollingTarget.value != null) {
+      return
     }
-    else {
-      source = document.querySelector<HTMLElement>(`.CodeMirror-scroll`)!
-      target = preview.value!.$el
-
-      target.removeEventListener(`scroll`, previewScrollCB, false)
-      timeout.value = setTimeout(() => {
-        target.addEventListener(`scroll`, previewScrollCB, false)
-      }, 300)
-    }
-
+    clearTimeout(scrollingTimeout.value)
+    scrollingTarget.value = `preview`
+    const source = preview.value!.$el
+    const target = document.querySelector<HTMLElement>(`.cm-scroller`)!
     const percentage
-          = source.scrollTop / (source.scrollHeight - source.offsetHeight)
+      = source.scrollTop / (source.scrollHeight - source.offsetHeight)
     const height = percentage * (target.scrollHeight - target.offsetHeight)
 
     target.scrollTo(0, height)
+    scrollingTimeout.value = setTimeout(() => {
+      scrollingTarget.value = null
+    }, 2)
   }
 
-  function editorScrollCB() {
-    scrollCB(`editor`)
-  }
-
-  function previewScrollCB() {
-    scrollCB(`preview`)
-  }
-
-  (preview.value!.$el).addEventListener(`scroll`, previewScrollCB, false)
-  editor.value!.on(`scroll`, editorScrollCB)
+  preview.value!.$el.addEventListener(`scroll`, previewScrollCB, false)
 }
 
 onMounted(() => {
-  setTimeout(() => {
-    leftAndRightScroll()
-  }, 300)
+  listenPreviewScroll()
 })
 
 // 更新编辑器
@@ -155,14 +146,23 @@ function uploaded(imageUrl: string) {
     return
   }
   toggleShowUploadImgDialog(false)
-  // 上传成功，获取光标
-  const cursor = editor.value!.getCursor()
   const markdownImage = `![](${imageUrl})`
+
   // 将 Markdown 形式的 URL 插入编辑框光标所在位置
-  toRaw(store.editor!).replaceSelection(`\n${markdownImage}\n`, cursor as any)
+  const range = editor.value!.state.selection.ranges[0]
+  editor.value!.dispatch({
+    changes: {
+      from: range.from,
+      // to: range.to,
+      insert: `\n${markdownImage}\n`,
+    },
+  })
   ElMessage.success(`图片上传成功`)
 }
-function uploadImage(file: File, cb?: { (url: any): void, (arg0: unknown): void } | undefined) {
+function uploadImage(
+  file: File,
+  cb?: { (url: any): void, (arg0: unknown): void } | undefined,
+) {
   isImgLoading.value = true
 
   toBase64(file)
@@ -183,98 +183,90 @@ function uploadImage(file: File, cb?: { (url: any): void, (arg0: unknown): void 
     })
 }
 
-const changeTimer = ref<NodeJS.Timeout>()
-
-// 监听暗色模式并更新编辑器
-watch(isDark, () => {
-  const theme = isDark.value ? `darcula` : `xq-light`
-  toRaw(editor.value)?.setOption?.(`theme`, theme)
-})
-
 // 初始化编辑器
 function initEditor() {
-  const editorDom = document.querySelector<HTMLTextAreaElement>(`#editor`)!
+  const editorDom = document.querySelector<Element>(`#editor`)!
 
-  if (!editorDom.value) {
-    editorDom.value = editorContent.value
-  }
-  editor.value = CodeMirror.fromTextArea(editorDom, {
-    mode: `text/x-markdown`,
-    theme: isDark.value ? `darcula` : `xq-light`,
-    lineNumbers: false,
-    lineWrapping: true,
-    styleActiveLine: true,
-    autoCloseBrackets: true,
-    extraKeys: {
-      [`${shiftKey}-${altKey}-F`]: function autoFormat(editor) {
-        formatDoc(editor.getValue()).then((doc) => {
-          editor.setValue(doc)
-        })
-      },
-      [`${ctrlKey}-B`]: function bold(editor) {
-        const selected = editor.getSelection()
-        editor.replaceSelection(`**${selected}**`)
-      },
-      [`${ctrlKey}-I`]: function italic(editor) {
-        const selected = editor.getSelection()
-        editor.replaceSelection(`*${selected}*`)
-      },
-      [`${ctrlKey}-D`]: function del(editor) {
-        const selected = editor.getSelection()
-        editor.replaceSelection(`~~${selected}~~`)
-      },
-      [`${ctrlKey}-K`]: function italic(editor) {
-        const selected = editor.getSelection()
-        editor.replaceSelection(`[${selected}]()`)
-      },
-      [`${ctrlKey}-E`]: function code(editor) {
-        const selected = editor.getSelection()
-        editor.replaceSelection(`\`${selected}\``)
-      },
-      // 预备弃用
-      [`${ctrlKey}-L`]: function code(editor) {
-        const selected = editor.getSelection()
-        editor.replaceSelection(`\`${selected}\``)
-      },
-    },
-  })
-
-  editor.value.on(`change`, (e) => {
-    clearTimeout(changeTimer.value)
-    changeTimer.value = setTimeout(() => {
-      onEditorRefresh()
-      editorContent.value = e.getValue()
-    }, 300)
-  })
-
-  // 粘贴上传图片并插入
-  editor.value.on(`paste`, (_cm, e) => {
-    if (!(e.clipboardData && e.clipboardData.items) || isImgLoading.value) {
-      return
-    }
-    for (let i = 0, len = e.clipboardData.items.length; i < len; ++i) {
-      const item = e.clipboardData.items[i]
-      if (item.kind === `file`) {
-        // 校验图床参数
-        const pasteFile = item.getAsFile()!
-        const isValid = beforeUpload(pasteFile)
-        if (!isValid) {
-          continue
+  editorExtensions.value = initEditorExtensions(
+    (update) => {
+      if (update.docChanged) {
+        if (store.articles.length === 0) {
+          displayStore.isShowAddArticleDialog = true
+          return
         }
-        uploadImage(pasteFile)
+        debounce(() => {
+          onEditorRefresh()
+          if (currentArticle.value) {
+            currentArticle.value.content = update.state.doc.toString()
+          }
+        }, 300)()
+        store.editorReadTime = toRaw(store.editor)?.readTime()
       }
-    }
+      return false
+    },
+    (event, _) => {
+      // paste handler
+      if (
+        !(event.clipboardData && event.clipboardData.items)
+        || isImgLoading.value
+      ) {
+        return false
+      }
+      for (let i = 0, len = event.clipboardData.items.length; i < len; ++i) {
+        const item = event.clipboardData.items[i]
+        if (item.kind === `file`) {
+          // 校验图床参数
+          const pasteFile = item.getAsFile()!
+          const isValid = beforeUpload(pasteFile)
+          if (!isValid) {
+            continue
+          }
+          uploadImage(pasteFile)
+        }
+      }
+      return false
+    },
+    (_, __) => {
+      if (scrollingTarget.value != null) {
+        return false
+      }
+      clearTimeout(scrollingTimeout.value)
+      scrollingTarget.value = `editor`
+
+      const source = document.querySelector<HTMLElement>(`.cm-scroller`)!
+      const target = preview.value!.$el
+      const percentage
+        = source.scrollTop / (source.scrollHeight - source.offsetHeight)
+      const height = percentage * (target.scrollHeight - target.offsetHeight)
+      target.scrollTo(0, height)
+      scrollingTimeout.value = setTimeout(() => {
+        scrollingTarget.value = null
+      }, 2)
+      return false
+    },
+  )
+
+  editor.value = initCodemirrorEditor(editorDom, {
+    extensions: toRaw(editorExtensions.value),
+    initContent: currentArticle.value?.content || ``,
   })
+  // // 初始化显示
+  // store.editorReadTime = toRaw(store.editor)?.readTime();
 }
 
 const container = ref(null)
 
 // 工具函数，添加格式
 function addFormat(cmd: string | number) {
-  (editor.value as any).options.extraKeys[cmd](editor.value)
+  const action = keymapActions.find(bind => bind.key === cmd)
+  if (action && editor.value) {
+    action.run!(editor.value! as MyEditorView)
+  }
 }
 
-const codeMirrorWrapper = ref<ComponentPublicInstance<typeof ElCol> | null>(null)
+const codeMirrorWrapper = ref<ComponentPublicInstance<typeof ElCol> | null>(
+  null,
+)
 
 // 转换 markdown 中的本地图片为线上图片
 // todo 处理事件覆盖
@@ -282,7 +274,13 @@ function mdLocalToRemote() {
   const dom = codeMirrorWrapper.value!.$el as HTMLElement
 
   // 上传 md 中的图片
-  const uploadMdImg = async ({ md, list }: { md: { str: string, path: string, file: File }, list: { path: string, file: File }[] }) => {
+  const uploadMdImg = async ({
+    md,
+    list,
+  }: {
+    md: { str: string, path: string, file: File }
+    list: { path: string, file: File }[]
+  }) => {
     const mdImgList = [
       ...(md.str.matchAll(/!\[(.*?)\]\((.*?)\)/g) || []),
     ].filter((item) => {
@@ -295,7 +293,7 @@ function mdLocalToRemote() {
           let [, , matchStr] = item
           matchStr = matchStr.replace(/^.\//, ``) // 处理 ./img/ 为 img/ 统一相对路径风格
           const { file }
-                = list.find(f => f.path === `${root}${matchStr}`) || {}
+            = list.find(f => f.path === `${root}${matchStr}`) || {}
           uploadImage(file!, (url) => {
             resolve({ matchStr, url })
           })
@@ -307,24 +305,38 @@ function mdLocalToRemote() {
         .replace(`](./${item.matchStr})`, `](${item.url})`)
         .replace(`](${item.matchStr})`, `](${item.url})`)
     })
-    editor.value!.setValue(md.str)
+    const state = editor.value!.state
+    editor.value!.dispatch(
+      state.update({
+        changes: { from: 0, to: state.doc.length, insert: md.str },
+      }),
+    )
   }
 
   dom.ondragover = evt => evt.preventDefault()
   dom.ondrop = async (evt: any) => {
     evt.preventDefault()
     for (const item of evt.dataTransfer.items) {
-      item.getAsFileSystemHandle().then(async (handle: { kind: string, getFile: () => any }) => {
-        if (handle.kind === `directory`) {
-          const list = await showFileStructure(handle) as { path: string, file: File }[]
-          const md = await getMd({ list })
-          uploadMdImg({ md, list })
-        }
-        else {
-          const file = await handle.getFile()
-          console.log(`file`, file)
-        }
-      })
+      item
+        .getAsFileSystemHandle()
+        .then(async (handle?: { kind: string, getFile: () => any }) => {
+          if (!handle) {
+            return
+          }
+
+          if (handle.kind === `directory`) {
+            const list = (await showFileStructure(handle)) as {
+              path: string
+              file: File
+            }[]
+            const md = await getMd({ list })
+            uploadMdImg({ md, list })
+          }
+          else {
+            const file = await handle.getFile()
+            console.log(`file`, file)
+          }
+        })
     }
   }
 
@@ -380,58 +392,88 @@ onMounted(() => {
   onEditorRefresh()
   mdLocalToRemote()
 })
+onBeforeUnmount(() => {
+  editor.value?.destroy()
+})
+
+function aiGenerate() {
+  aiModelStore.toggleShowPromptDialog(true)
+}
+function toAiRewrite() {
+  initGenerateType.value = AiGenerateType.rewrite
+  aiModelStore.toggleShowPromptDialog(true)
+  // 延迟两秒
+  setTimeout(() => {
+    initGenerateType.value = undefined
+  }, 2000)
+}
 </script>
 
 <template>
-  <div ref="container" class="container flex flex-col">
+  <div ref="container" class="container flex flex-1 flex-col">
     <EditorHeader
       @add-format="addFormat"
       @format-content="formatContent"
       @start-copy="startCopy"
-      @end-copy="endCopy"
-    />
-    <main class="container-main flex-1">
-      <el-row class="container-main-section h-full border-1">
+      @end-copy="endCopy" />
+    <main class="container-main w-full flex-1">
+      <el-row class="container-main-section mr-[25px] h-full border-1 rounded">
         <ElCol
           ref="codeMirrorWrapper"
           :span="isShowCssEditor ? 8 : 12"
+          :lg="isShowCssEditor ? 8 : 14"
+          :xl="isShowCssEditor ? 8 : 16"
           class="codeMirror-wrapper border-r-1"
           :class="{
             'order-1': !store.isEditOnLeft,
-          }"
-        >
+          }">
           <ContextMenu>
             <ContextMenuTrigger>
-              <textarea
-                id="editor"
-                type="textarea"
-                placeholder="Your markdown text here."
-              />
+              <div id="editor" />
             </ContextMenuTrigger>
-            <ContextMenuContent class="w-64">
-              <ContextMenuItem inset @click="toggleShowUploadImgDialog()">
-                上传图片
-              </ContextMenuItem>
-              <ContextMenuItem inset @click="toggleShowInsertFormDialog()">
-                插入表格
-              </ContextMenuItem>
-              <ContextMenuItem inset @click="resetStyleConfirm()">
-                恢复默认样式
-              </ContextMenuItem>
-              <ContextMenuSeparator />
-              <ContextMenuItem inset @click="importMarkdownContent()">
-                导入 .md 文档
-              </ContextMenuItem>
-              <ContextMenuItem inset @click="exportEditorContent2MD()">
-                导出 .md 文档
-              </ContextMenuItem>
-              <ContextMenuItem inset @click="exportEditorContent2HTML()">
-                导出 .html
-              </ContextMenuItem>
-              <ContextMenuItem inset @click="formatContent()">
-                格式化
-                <ContextMenuShortcut>{{ altSign }} + {{ shiftSign }} + F</ContextMenuShortcut>
-              </ContextMenuItem>
+            <ContextMenuContent as-child>
+              <ElCol
+                class="border-none bg-transparent shadow-none outline-none">
+                <SelectionToolbar
+                  class="context-menu-toolbar z-50 mb-1 shadow-lg"
+                  @ai-rewrite="toAiRewrite" />
+                <ElCol class="context-menu w-64 rounded shadow-lg">
+                  <ContextMenuItem inset @click="aiGenerate">
+                    <Icon
+                      icon="tabler:ai"
+                      :width="20"
+                      :height="20"
+                      class="mr-[4px] self-center rounded bg-green-500/50" />
+                    AI生成
+                  </ContextMenuItem>
+                  <ContextMenuItem inset @click="toggleShowUploadImgDialog">
+                    上传图片
+                  </ContextMenuItem>
+                  <ContextMenuItem inset @click="toggleShowInsertFormDialog()">
+                    插入表格
+                  </ContextMenuItem>
+                  <ContextMenuItem inset @click="resetStyleConfirm()">
+                    恢复默认样式
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+
+                  <ContextMenuItem inset @click="importMarkdownContent()">
+                    导入 .md 文档
+                  </ContextMenuItem>
+                  <ContextMenuItem inset @click="exportEditorContent2MD()">
+                    导出 .md 文档
+                  </ContextMenuItem>
+                  <ContextMenuItem inset @click="exportEditorContent2HTML()">
+                    导出 .html
+                  </ContextMenuItem>
+                  <ContextMenuItem inset @click="formatContent()">
+                    格式化
+                    <ContextMenuShortcut>
+                      {{ altSign }} + {{ shiftSign }} + F
+                    </ContextMenuShortcut>
+                  </ContextMenuItem>
+                </ElCol>
+              </ElCol>
             </ContextMenuContent>
           </ContextMenu>
         </ElCol>
@@ -439,8 +481,9 @@ onMounted(() => {
           id="preview"
           ref="preview"
           :span="isShowCssEditor ? 8 : 12"
-          class="preview-wrapper p-5"
-        >
+          :lg="isShowCssEditor ? 8 : 10"
+          :xl="isShowCssEditor ? 8 : 8"
+          class="preview-wrapper p-5">
           <div id="output-wrapper" :class="{ output_night: !backLight }">
             <div class="preview border shadow-xl">
               <section id="output" v-html="output" />
@@ -455,14 +498,16 @@ onMounted(() => {
         </ElCol>
         <CssEditor />
       </el-row>
+      <SideToolBar />
     </main>
+    <EditorFooter />
 
-    <UploadImgDialog
-      @upload-image="uploadImage"
-    />
+    <UploadImgDialog @upload-image="uploadImage" />
 
     <InsertFormDialog />
-
+    <PromptDialog
+      :generate-type="initGenerateType"
+      :immediate="!!initGenerateType" />
     <RunLoading />
   </div>
 </template>
@@ -472,16 +517,24 @@ onMounted(() => {
 </style>
 
 <style lang="less" scoped>
+.context-menu,
+.context-menu-toolbar {
+  color: var(--el-text-color-regular);
+  background-color: var(--el-bg-color);
+}
+
 .container {
   height: 100vh;
-  min-width: 100%;
+  width: 100%;
   padding: 0;
+  max-width: none;
+  // min-width: calc(100vw - 210px);
 }
 
 .container-main {
   overflow: hidden;
-  padding: 20px;
-  padding-top: 0;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 #output-wrapper {
@@ -526,5 +579,9 @@ onMounted(() => {
 
 .codeMirror-wrapper {
   overflow-x: auto;
+}
+
+.codeMirror-wrapper::-webkit-scrollbar {
+  width: 0;
 }
 </style>

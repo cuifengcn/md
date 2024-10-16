@@ -13,15 +13,14 @@ function editTabName() {
     inputValue: store.cssContentConfig.active,
     inputErrorMessage: `不能与现有方案重名`,
     inputValidator: store.validatorTabName,
+  }).then(({ value }) => {
+    if (!`${value}`.trim()) {
+      ElMessage.error(`修改失败，方案名不可为空`)
+      return
+    }
+    store.renameTab(value)
+    ElMessage.success(`修改成功~`)
   })
-    .then(({ value }) => {
-      if (!(`${value}`).trim()) {
-        ElMessage.error(`修改失败，方案名不可为空`)
-        return
-      }
-      store.renameTab(value)
-      ElMessage.success(`修改成功~`)
-    })
 }
 
 function handleTabsEdit(targetName: string, action: string) {
@@ -32,15 +31,14 @@ function handleTabsEdit(targetName: string, action: string) {
       inputValue: `方案${store.cssContentConfig.tabs.length + 1}`,
       inputErrorMessage: `不能与现有方案重名`,
       inputValidator: store.validatorTabName,
+    }).then(({ value }) => {
+      if (!`${value}`.trim()) {
+        ElMessage.error(`新建失败，方案名不可为空`)
+        return
+      }
+      store.addCssContentTab(value)
+      ElMessage.success(`新建成功~`)
     })
-      .then(({ value }) => {
-        if (!(`${value}`).trim()) {
-          ElMessage.error(`新建失败，方案名不可为空`)
-          return
-        }
-        store.addCssContentTab(value)
-        ElMessage.success(`新建成功~`)
-      })
   }
   else if (action === `remove`) {
     const tabs = store.cssContentConfig.tabs
@@ -68,37 +66,33 @@ function handleTabsEdit(targetName: string, action: string) {
 
 <template>
   <transition enter-active-class="bounceInRight">
-    <el-col v-show="displayStore.isShowCssEditor" :span="8" class="cssEditor-wrapper order-1 h-full flex flex-col border-l-1">
+    <el-col
+      v-show="displayStore.isShowCssEditor"
+      :span="8"
+      class="cssEditor-wrapper order-1 h-full flex flex-col border-l-1">
       <el-tabs
         v-model="store.cssContentConfig.active"
         type="border-card"
         stretch
         editable
         @edit="handleTabsEdit"
-        @tab-change="store.tabChanged"
-      >
+        @tab-change="store.tabChanged">
         <el-tab-pane
           v-for="item in store.cssContentConfig.tabs"
           :key="item.name"
-          :name="item.name"
-        >
+          :name="item.name">
           <template #label>
             {{ item.title }}
             <el-icon
               v-if="store.cssContentConfig.active === item.name"
               class="ml-1"
-              @click="editTabName()"
-            >
+              @click="editTabName()">
               <ElIconEditPen />
             </el-icon>
           </template>
         </el-tab-pane>
       </el-tabs>
-      <textarea
-        id="cssEditor"
-        type="textarea"
-        placeholder="Your custom css here."
-      />
+      <div id="cssEditor" class="h-full" />
     </el-col>
   </transition>
 </template>
