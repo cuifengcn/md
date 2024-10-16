@@ -22,8 +22,7 @@ const forwardedProps = useForwardProps(delegatedProps)
         'text-lg font-semibold leading-none tracking-tight',
         props.class,
       )
-    "
-  >
+    ">
     <slot />
   </DialogTitle>
 </template>

@@ -41,8 +41,7 @@ function setStyle(title: string, value: string) {
         :label="label"
         :model-value="value"
         class="w-50"
-        @click="change(value)"
-      >
+        @click="change(value)">
         <el-icon class="mr-2 h-4 w-4" :style="{ opacity: +(current === value) }">
           <ElIconCheck />
         </el-icon>

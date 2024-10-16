@@ -27,8 +27,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 <template>
   <DialogPortal>
     <DialogOverlay
-      class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/80"
-    >
+      class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/80">
       <DialogContent
         :class="
           cn(
@@ -43,13 +42,11 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
           if (originalEvent.offsetX > target.clientWidth || originalEvent.offsetY > target.clientHeight) {
             event.preventDefault();
           }
-        }"
-      >
+        }">
         <slot />
 
         <DialogClose
-          class="hover:bg-secondary absolute right-3 top-3 rounded-md p-0.5 transition-colors"
-        >
+          class="hover:bg-secondary absolute right-3 top-3 rounded-md p-0.5 transition-colors">
           <X class="h-4 w-4" />
           <span class="sr-only">Close</span>
         </DialogClose>
