@@ -1,9 +1,11 @@
-import type { AiModel, Article } from '@/types'
-import type { MyEditorView } from '@/utils/codeMirrorUtil/editor'
-import type { Extension } from '@codemirror/state'
-import type { ReadTimeResults } from 'reading-time'
-import DEFAULT_CONTENT from '@/assets/example/markdown.md?raw'
-import DEFAULT_CSS_CONTENT from '@/assets/example/theme-css.txt?raw'
+import type { AiModel, Article, IConfigOption, PreviewTheme } from '@/types';
+import type { MyEditorView } from '@/utils/codeMirrorUtil/editor';
+import type { Extension } from '@codemirror/state';
+import type { ReadTimeResults } from 'reading-time';
+import DEFAULT_CONTENT from '@/assets/example/markdown.md?raw';
+import DEFAULT_CSS_CONTENT from '@/assets/example/theme-css.txt?raw';
+import DEFAULT_THEME from '@/assets/themes/default.css?raw';
+import GRACE_THEME from '@/assets/themes/grace.css?raw';
 import {
   codeBlockThemeOptions,
   colorOptions,
@@ -12,7 +14,7 @@ import {
   legendOptions,
   themeMap,
   themeOptions,
-} from '@/config'
+} from '@/config';
 import {
   addPrefix,
   css2json,
@@ -21,23 +23,32 @@ import {
   downloadMD,
   exportHTML,
   formatDoc,
-} from '@/utils'
+  mergeCss,
+} from '@/utils';
 import {
   cssThemeCompartment,
   initCssEditor,
   initCssEditorExtensions,
-} from '@/utils/codeMirrorUtil' // 确保这个导入路径正确
+} from '@/utils/codeMirrorUtil'; // 确保这个导入路径正确
 
-import { initRenderer } from '@/utils/renderer'
-import { EditorState } from '@codemirror/state'
-import { useDark, useStorage, useToggle } from '@vueuse/core'
-import { ElLoading, ElMessage, ElMessageBox } from 'element-plus'
-import { marked } from 'marked'
-import { defineStore } from 'pinia'
-import readingTime from 'reading-time'
-import { ayuLight, barf } from 'thememirror'
-import { v4 as uuidv4 } from 'uuid'
-import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
+import { initRenderer } from '@/utils/renderer';
+import { EditorState } from '@codemirror/state';
+import { useDark, useStorage, useToggle } from '@vueuse/core';
+import { ElLoading, ElMessage, ElMessageBox } from 'element-plus';
+import { marked } from 'marked';
+import { defineStore } from 'pinia';
+import readingTime from 'reading-time';
+import { ayuLight, barf } from 'thememirror';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  shallowRef,
+  toRaw,
+  watch,
+} from 'vue';
 
 // 通过将codemirror中的MeasureRequest进行export解决
 export const useStore = defineStore(`store`, () => {
@@ -48,203 +59,242 @@ export const useStore = defineStore(`store`, () => {
       content: DEFAULT_CONTENT,
       createTs: Date.now(),
     },
-  ])
+  ]);
   const currentArticleId = useStorage<string | null>(
     `currentArticleId`,
-    articles.value[0]?.id,
-  )
+    articles.value[0]?.id
+  );
 
   const currentArticle = computed(() => {
     if (!currentArticleId.value) {
-      return undefined
+      return undefined;
+    } else {
+      return articles.value.find((a) => a.id === currentArticleId.value);
     }
-    else {
-      return articles.value.find(a => a.id === currentArticleId.value)
-    }
-  })
+  });
 
   // 内容编辑器编辑器
-  const editor = ref<MyEditorView | null>(null)
-  const editorExtensions = ref<Extension[]>()
-  const editorReadTime = ref<ReadTimeResults>()
+  const editor = ref<MyEditorView | null>(null);
+  const editorExtensions = ref<Extension[]>();
+  const editorReadTime = ref<ReadTimeResults>();
 
   const selectArticle = async (id: string) => {
     if (id === currentArticle.value?.id) {
-      return
+      return;
     }
     const loading = ElLoading.service({
       lock: true,
       text: `载入中`,
       background: `rgba(0, 0, 0, 0.1)`,
-    })
-    await new Promise(resolve => setTimeout(resolve, 200))
-    currentArticleId.value = id
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    currentArticleId.value = id;
     toRaw(editor.value)?.setState(
       EditorState.create({
         doc: currentArticle.value?.content || ``,
         extensions: toRaw(editorExtensions.value),
-      }),
-    )
+      })
+    );
     // eslint-disable-next-line ts/no-use-before-define
-    editorRefresh()
-    loading.close()
-    toRaw(editor.value)?.focus()
-  }
+    editorRefresh();
+    loading.close();
+    toRaw(editor.value)?.focus();
+  };
 
   const addArticle = async (props: Partial<Article>) => {
-    props.id ??= uuidv4()
-    props.createTs ??= Date.now()
-    if (articles.value.find(a => a.id === props.id)) {
+    props.id ??= uuidv4();
+    props.createTs ??= Date.now();
+    if (articles.value.find((a) => a.id === props.id)) {
       articles.value.forEach((a) => {
         if (a.id === props.id) {
-          Object.assign(a, props)
+          Object.assign(a, props);
         }
-      })
-    }
-    else {
+      });
+    } else {
       // 将此文章添加到开头
       articles.value.unshift({
         id: props.id,
         ...props,
-      })
-      await new Promise(resolve => setTimeout(resolve, 300)) // 等待动画完成
-      selectArticle(props.id)
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300)); // 等待动画完成
+      selectArticle(props.id);
     }
-  }
+  };
   const removeArticle = async (id: string) => {
-    const ANIMATION_DELAY = 300 // ms
+    const ANIMATION_DELAY = 300; // ms
     const getNextArticleId = (index: number): string | undefined => {
-      const nextIndex
-        = index === articles.value.length - 1 ? index - 1 : index + 1
-      return articles.value[nextIndex]?.id
-    }
+      const nextIndex =
+        index === articles.value.length - 1 ? index - 1 : index + 1;
+      return articles.value[nextIndex]?.id;
+    };
 
     const waitForAnimation = () =>
-      new Promise(resolve => setTimeout(resolve, ANIMATION_DELAY))
+      new Promise((resolve) => setTimeout(resolve, ANIMATION_DELAY));
 
-    const index = articles.value.findIndex(a => a.id === id)
+    const index = articles.value.findIndex((a) => a.id === id);
 
     if (currentArticle.value?.id === id) {
       if (articles.value.length === 1) {
-        articles.value.splice(index, 1)
-        currentArticleId.value = undefined
-      }
-      else {
-        const newId = getNextArticleId(index)
+        articles.value.splice(index, 1);
+        currentArticleId.value = undefined;
+      } else {
+        const newId = getNextArticleId(index);
         if (newId) {
-          articles.value.splice(index, 1)
-          await waitForAnimation()
-          await selectArticle(newId)
+          articles.value.splice(index, 1);
+          await waitForAnimation();
+          await selectArticle(newId);
         }
       }
+    } else {
+      await waitForAnimation();
+      articles.value.splice(index, 1);
     }
-    else {
-      await waitForAnimation()
-      articles.value.splice(index, 1)
-    }
-  }
+  };
 
   const saveArticles = () => {
     if (currentArticle.value) {
-      addArticle(currentArticle.value)
+      addArticle(currentArticle.value);
     }
-    localStorage.setItem(`articles`, JSON.stringify(articles.value))
-  }
+    localStorage.setItem(`articles`, JSON.stringify(articles.value));
+  };
 
   // 是否开启深色模式
-  const isDark = useDark()
-  const toggleDark = useToggle(isDark)
+  const isDark = useDark();
+  const toggleDark = useToggle(isDark);
 
   // 是否开启 Mac 代码块
-  const isMacCodeBlock = useStorage(`isMacCodeBlock`, true)
-  const toggleMacCodeBlock = useToggle(isMacCodeBlock)
+  const isMacCodeBlock = useStorage(`isMacCodeBlock`, true);
+  const toggleMacCodeBlock = useToggle(isMacCodeBlock);
 
   // 是否在左侧编辑
-  const isEditOnLeft = useStorage(`isEditOnLeft`, true)
-  const toggleEditOnLeft = useToggle(isEditOnLeft)
+  const isEditOnLeft = useStorage(`isEditOnLeft`, true);
+  const toggleEditOnLeft = useToggle(isEditOnLeft);
 
   // 是否开启微信外链接底部引用
-  const isCiteStatus = useStorage(`isCiteStatus`, false)
-  const toggleCiteStatus = useToggle(isCiteStatus)
+  const isCiteStatus = useStorage(`isCiteStatus`, false);
+  const toggleCiteStatus = useToggle(isCiteStatus);
 
-  const output = ref(``)
+  const output = ref(``);
 
-  // 文本字体
-  const theme = useStorage<keyof typeof themeMap>(
+  // 主题相关
+  const defaultCssThemes = ref<IConfigOption[]>([
+    {
+      label: `默认主题`,
+      desc: `default`,
+      value: DEFAULT_THEME,
+    },
+    {
+      label: `优雅`,
+      desc: `grace`,
+      value: GRACE_THEME,
+    },
+  ]);
+
+  // 当前主题
+  const theme = useStorage<string>(
     addPrefix(`theme`),
-    themeOptions[0].value,
-  )
+    defaultCssThemes.value[0].value
+  );
+  const cssThemeContent = ref<string>(``);
   // 文本字体
-  const fontFamily = useStorage(`fonts`, fontFamilyOptions[0].value)
+  const fontFamily = useStorage<string>(`fonts`, fontFamilyOptions[0].value);
   // 文本大小
-  const fontSize = useStorage(`size`, fontSizeOptions[2].value)
+  const fontSize = useStorage<string>(`size`, fontSizeOptions[2].value);
   // 主色
-  const primaryColor = useStorage(`color`, colorOptions[0].value)
+  const primaryColor = useStorage<string>(`color`, colorOptions[0].value);
   // 代码块主题
-  const codeBlockTheme = useStorage(
+  const codeBlockTheme = useStorage<string>(
     `codeBlockTheme`,
-    codeBlockThemeOptions[23].value,
-  )
+    codeBlockThemeOptions[23].value
+  );
   // 图注格式
-  const legend = useStorage(`legend`, legendOptions[3].value)
+  const legend = useStorage<string>(`legend`, legendOptions[3].value);
 
-  const fontSizeNumber = computed(() => fontSize.value.replace(`px`, ``))
+  const fontSizeNumber = computed(() => fontSize.value.replace(`px`, ``));
+
+  const fetchCodeBlockThemeContent = async () => {
+    const res = await fetch(codeBlockTheme.value);
+    return await res.text();
+  };
+
+  const output2Html = async (): Promise<string> => {
+    const styles = cssThemeContent.value;
+    // 公众号不支持 position， 转换为等价的 translateY
+    const htmlContent = document
+      .getElementById(`output`)!
+      // eslint-disable-next-line antfu/consistent-chaining
+      .innerHTML.replace(/top:(.*?)em/g, `transform: translateY($1em)`);
+
+    // 从 store.codeBlockTheme网址 获取css内容
+    const codeBlockCss = await fetchCodeBlockThemeContent();
+
+    const content = mergeCss(`<html>
+          <head>
+            <style>${styles}</style>
+            <style>${codeBlockCss}</style>
+          </head>
+          <body>
+            ${htmlContent}
+          </body>
+        </html>`);
+    return content;
+  };
 
   // 格式化文档
   const formatContent = () => {
     formatDoc(editor.value!.state.doc.toString()).then((doc) => {
       if (currentArticle.value) {
-        currentArticle.value.content = doc
+        currentArticle.value.content = doc;
       }
       if (editor.value) {
         toRaw(editor.value).dispatch(
           toRaw(editor.value).state.update({
             changes: { from: 0, to: doc.length, insert: doc },
-          }),
-        )
+          })
+        );
       }
-    })
-  }
+    });
+  };
 
   // 切换 highlight.js 代码主题
   const codeThemeChange = () => {
-    const cssUrl = codeBlockTheme.value
-    const el = document.querySelector(`#hljs`)
+    const cssUrl = codeBlockTheme.value;
+    const el = document.querySelector(`#hljs`);
     if (el) {
-      el.setAttribute(`href`, cssUrl)
+      el.setAttribute(`href`, cssUrl);
+    } else {
+      const link = document.createElement(`link`);
+      link.setAttribute(`type`, `text/css`);
+      link.setAttribute(`rel`, `stylesheet`);
+      link.setAttribute(`href`, cssUrl);
+      link.setAttribute(`id`, `hljs`);
+      document.head.appendChild(link);
     }
-    else {
-      const link = document.createElement(`link`)
-      link.setAttribute(`type`, `text/css`)
-      link.setAttribute(`rel`, `stylesheet`)
-      link.setAttribute(`href`, cssUrl)
-      link.setAttribute(`id`, `hljs`)
-      document.head.appendChild(link)
-    }
-  }
+  };
 
   // 自义定 CSS 编辑器
-  const cssEditor = ref<MyEditorView | null>(null)
-  const cssEditorExtensions = ref<Extension[]>()
+  const cssEditor = ref<MyEditorView | null>(null);
+  const cssEditorExtensions = ref<Extension[]>();
+
   const setCssEditorValue = async (content: string) => {
     if (cssEditor.value) {
       const loading = ElLoading.service({
         lock: true,
         text: `载入中`,
         background: `rgba(0, 0, 0, 0.1)`,
-      })
-      await new Promise(resolve => setTimeout(resolve, 200))
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
       toRaw(cssEditor.value).setState(
         EditorState.create({
           doc: content,
           extensions: toRaw(cssEditorExtensions.value),
-        }),
-      )
-      loading.close()
+        })
+      );
+      loading.close();
     }
-  }
+  };
   // 自定义 CSS 内容
-  const cssContent = useStorage(`__css_content`, DEFAULT_CSS_CONTENT)
+  const cssContent = useStorage(`__css_content`, DEFAULT_CSS_CONTENT);
   const cssContentConfig = useStorage(addPrefix(`css_content_config`), {
     active: `方案1`,
     tabs: [
@@ -252,75 +302,75 @@ export const useStore = defineStore(`store`, () => {
         title: `方案1`,
         name: `方案1`,
         // 兼容之前的方案
-        content: cssContent.value || DEFAULT_CSS_CONTENT,
+        content: cssContent.value.trim() || DEFAULT_CSS_CONTENT,
       },
     ],
-  })
+  });
   onMounted(() => {
     // 清空过往历史记录
-    cssContent.value = ``
-  })
+    cssContent.value = ``;
+  });
   const getCurrentTab = () =>
     cssContentConfig.value.tabs.find((tab) => {
-      return tab.name === cssContentConfig.value.active
-    })!
+      return tab.name === cssContentConfig.value.active;
+    })!;
   const tabChanged = (name: string) => {
-    cssContentConfig.value.active = name
+    cssContentConfig.value.active = name;
     const content = cssContentConfig.value.tabs.find((tab) => {
-      return tab.name === name
-    })!.content
-    setCssEditorValue(content)
-  }
+      return tab.name === name;
+    })!.content;
+    setCssEditorValue(content);
+  };
 
   // 重命名 css 方案
   const renameTab = (name: string) => {
-    const tab = getCurrentTab()!
-    tab.title = name
-    tab.name = name
-    cssContentConfig.value.active = name
-  }
+    const tab = getCurrentTab()!;
+    tab.title = name;
+    tab.name = name;
+    cssContentConfig.value.active = name;
+  };
 
   const addCssContentTab = (name: string) => {
     cssContentConfig.value.tabs.push({
       name,
       title: name,
       content: DEFAULT_CSS_CONTENT,
-    })
-    cssContentConfig.value.active = name
-    setCssEditorValue(DEFAULT_CSS_CONTENT)
-  }
+    });
+    cssContentConfig.value.active = name;
+    setCssEditorValue(DEFAULT_CSS_CONTENT);
+  };
   const validatorTabName = (val: string) => {
-    return cssContentConfig.value.tabs.every(({ name }) => name !== val)
-  }
+    return cssContentConfig.value.tabs.every(({ name }) => name !== val);
+  };
 
   const renderer = initRenderer({
-    theme: customCssWithTemplate(
-      css2json(getCurrentTab().content),
-      primaryColor.value,
-      customizeTheme(themeMap[theme.value], {
-        fontSize: fontSizeNumber.value,
-        color: primaryColor.value,
-      }),
-    ),
+    // theme: customCssWithTemplate(
+    //   css2json(getCurrentTab().content),
+    //   primaryColor.value,
+    //   customizeTheme(themeMap[theme.value], {
+    //     fontSize: fontSizeNumber.value,
+    //     color: primaryColor.value,
+    //   })
+    // ),
     fonts: fontFamily.value,
     size: fontSizeNumber.value,
-  })
+  });
 
   // 更新编辑器
   const editorRefresh = () => {
-    codeThemeChange()
-    renderer.reset({ status: isCiteStatus.value, legend: legend.value })
+    codeThemeChange();
+    renderer.reset({ status: isCiteStatus.value, legend: legend.value });
 
     let outputTemp = marked.parse(
-      editor.value?.state.doc.toString() || ``,
-    ) as string
-    const originTemp = outputTemp
+      editor.value?.state.doc.toString() || ``
+    ) as string;
+    const originTemp = outputTemp;
     // 去除第一行的 margin-top
-    outputTemp = outputTemp.replace(/(style=".*?)"/, `$1;margin-top: 0"`)
+    outputTemp = outputTemp.replace(/(style=".*?)"/, `$1;margin-top: 0"`);
     // 引用脚注
-    outputTemp += renderer.buildFootnotes()
+    outputTemp += renderer.buildFootnotes();
     // 附加的一些 style
-    outputTemp += renderer.buildAddition()
+    outputTemp += renderer.buildAddition();
 
     if (isMacCodeBlock.value) {
       outputTemp += `
@@ -340,68 +390,85 @@ export const useStore = defineStore(`store`, () => {
             text-indent: 0;
           }
         </style>
-      `
+      `;
     }
 
-    output.value = outputTemp
+    output.value = outputTemp;
     // 更新readtime
-    const tempDiv = document.createElement(`div`)
-    tempDiv.innerHTML = originTemp
-    editorReadTime.value = readingTime(tempDiv.textContent || ``)
-  }
+    const tempDiv = document.createElement(`div`);
+    tempDiv.innerHTML = originTemp;
+    editorReadTime.value = readingTime(tempDiv.textContent || ``);
+  };
+
+  const mergeCssTheme = () => {
+    // 将主题和cssEditor中的样式进行 merge
+    cssThemeContent.value = `
+      ${theme.value}
+      ${cssEditor.value?.state.doc.toString() || ``}
+      * {
+        font-family: ${fontFamily.value};
+        font-size: ${fontSize.value};
+        --md-primary-color: ${primaryColor.value};
+      }
+    `;
+  };
 
   // 更新 CSS
   const updateCss = () => {
     if (!cssEditor.value) {
-      return
+      return;
     }
-    const json = css2json(cssEditor.value!.state.doc.toString())
-    const newTheme = customCssWithTemplate(
-      json,
-      primaryColor.value,
-      customizeTheme(themeMap[theme.value], {
-        fontSize: fontSizeNumber.value,
-        color: primaryColor.value,
-      }),
-    )
-    renderer.setOptions({
-      theme: newTheme,
-    })
-    editorRefresh()
-  }
+
+    mergeCssTheme();
+
+    // const json = css2json(cssEditor.value!.state.doc.toString());
+    // const newTheme = customCssWithTemplate(
+    //   json,
+    //   primaryColor.value,
+    //   customizeTheme(themeMap[theme.value], {
+    //     fontSize: fontSizeNumber.value,
+    //     color: primaryColor.value,
+    //   })
+    // );
+    // renderer.setOptions({
+    //   theme: newTheme,
+    // });
+    editorRefresh();
+  };
   // 初始化 CSS 编辑器
   onMounted(() => {
-    const cssEditorDom = document.querySelector<Element>(`#cssEditor`)!
+    const cssEditorDom = document.querySelector<Element>(`#cssEditor`)!;
     cssEditorExtensions.value = initCssEditorExtensions((_) => {
-      updateCss()
-      getCurrentTab().content = cssEditor.value?.state.doc.toString() || ``
-    })
+      updateCss();
+      getCurrentTab().content = cssEditor.value?.state.doc.toString() || ``;
+    });
     cssEditor.value = initCssEditor(cssEditorDom, {
       extensions: toRaw(cssEditorExtensions.value),
       initContent: getCurrentTab().content,
-    })
+    });
     const watchTheme = () => {
-      const theme = isDark.value ? barf : ayuLight
+      const theme = isDark.value ? barf : ayuLight;
       toRaw(cssEditor.value)?.dispatch({
         effects: cssThemeCompartment.reconfigure(theme),
-      })
-    }
-    watchTheme()
-    watch(isDark, watchTheme)
-  })
+      });
+    };
+    updateCss();
+    watchTheme();
+    watch(isDark, watchTheme);
+  });
 
   // 重置样式
   const resetStyle = () => {
-    isCiteStatus.value = false
-    isMacCodeBlock.value = true
+    isCiteStatus.value = false;
+    isMacCodeBlock.value = true;
 
-    theme.value = themeOptions[0].value
-    fontFamily.value = fontFamilyOptions[0].value
-    fontFamily.value = fontFamilyOptions[0].value
-    fontSize.value = fontSizeOptions[2].value
-    primaryColor.value = colorOptions[0].value
-    codeBlockTheme.value = codeBlockThemeOptions[2].value
-    legend.value = legendOptions[3].value
+    theme.value = themeOptions[0].value;
+    fontFamily.value = fontFamilyOptions[0].value;
+    fontFamily.value = fontFamilyOptions[0].value;
+    fontSize.value = fontSizeOptions[2].value;
+    primaryColor.value = colorOptions[0].value;
+    codeBlockTheme.value = codeBlockThemeOptions[2].value;
+    legend.value = legendOptions[3].value;
 
     cssContentConfig.value = {
       active: `方案 1`,
@@ -413,9 +480,9 @@ export const useStore = defineStore(`store`, () => {
           content: cssContent.value || DEFAULT_CSS_CONTENT,
         },
       ],
-    }
+    };
     if (cssEditor.value) {
-      const state = cssEditor.value.state
+      const state = cssEditor.value.state;
       toRaw(cssEditor.value).dispatch(
         state.update({
           changes: {
@@ -423,112 +490,121 @@ export const useStore = defineStore(`store`, () => {
             to: state.doc.length,
             insert: DEFAULT_CSS_CONTENT,
           },
-        }),
-      )
+        })
+      );
     }
 
-    updateCss()
-    editorRefresh()
-  }
+    updateCss();
+    editorRefresh();
+  };
 
   // 为函数添加刷新编辑器的功能
-  const withAfterRefresh
-    = (fn: (...rest: any[]) => void) =>
-      (...rest: any[]) => {
-        fn(...rest)
-        editorRefresh()
-      }
+  const withAfterRefresh =
+    (fn: (...rest: any[]) => void) =>
+    (...rest: any[]) => {
+      fn(...rest);
+      editorRefresh();
+    };
 
-  const getTheme = (size: string, color: string) => {
-    const newTheme = themeMap[theme.value]
-    const fontSize = size.replace(`px`, ``)
-    return customCssWithTemplate(
-      css2json(getCurrentTab().content),
-      color,
-      customizeTheme(newTheme, { fontSize, color }),
-    )
-  }
+  // const getTheme = (size: string, color: string) => {
+  //   const newTheme = themeMap[theme.value];
+  //   const fontSize = size.replace(`px`, ``);
+  //   return customCssWithTemplate(
+  //     css2json(getCurrentTab().content),
+  //     color,
+  //     customizeTheme(newTheme, { fontSize, color })
+  //   );
+  // };
 
-  const themeChanged = withAfterRefresh((newTheme: keyof typeof themeMap) => {
-    renderer.setOptions({
-      theme: customCssWithTemplate(
-        css2json(getCurrentTab().content),
-        primaryColor.value,
-        customizeTheme(themeMap[newTheme], { fontSize: fontSizeNumber.value }),
-      ),
-    })
-    theme.value = newTheme
-  })
+  const themeChanged = withAfterRefresh((newTheme: string) => {
+    theme.value = newTheme;
+    mergeCssTheme();
+    // renderer.setOptions({
+    //   theme: customCssWithTemplate(
+    //     css2json(getCurrentTab().content),
+    //     primaryColor.value,
+    //     customizeTheme(themeMap[newTheme], { fontSize: fontSizeNumber.value })
+    //   ),
+    // });
+    // theme.value = newTheme;
+  });
 
   const fontChanged = withAfterRefresh((fonts) => {
-    renderer.setOptions({
-      fonts,
-    })
+    fontFamily.value = fonts;
+    mergeCssTheme();
+    // renderer.setOptions({
+    //   fonts,
+    // });
 
-    fontFamily.value = fonts
-  })
+    // fontFamily.value = fonts;
+  });
 
   const sizeChanged = withAfterRefresh((size) => {
-    const theme = getTheme(size, primaryColor.value)
-    renderer.setOptions({
-      size,
-      theme,
-    })
+    fontSize.value = size;
+    mergeCssTheme();
 
-    fontSize.value = size
-  })
+    // const theme = getTheme(size, primaryColor.value);
+    // renderer.setOptions({
+    //   size,
+    //   theme,
+    // });
+
+    // fontSize.value = size;
+  });
 
   const colorChanged = withAfterRefresh((newColor) => {
-    const theme = getTheme(fontSize.value, newColor)
-    renderer.setOptions({
-      theme,
-    })
+    primaryColor.value = newColor;
+    mergeCssTheme();
+    // const theme = getTheme(fontSize.value, newColor);
+    // renderer.setOptions({
+    //   theme,
+    // });
 
-    primaryColor.value = newColor
-  })
+    // primaryColor.value = newColor;
+  });
 
   const codeBlockThemeChanged = withAfterRefresh((newTheme) => {
-    codeBlockTheme.value = newTheme
-  })
+    codeBlockTheme.value = newTheme;
+  });
 
   const legendChanged = withAfterRefresh((newVal) => {
-    legend.value = newVal
-  })
+    legend.value = newVal;
+  });
 
   const macCodeBlockChanged = withAfterRefresh(() => {
-    toggleMacCodeBlock()
-  })
+    toggleMacCodeBlock();
+  });
 
   const citeStatusChanged = withAfterRefresh(() => {
-    toggleCiteStatus()
-  })
+    toggleCiteStatus();
+  });
 
   // 导出编辑器内容为 HTML，并且下载到本地
   const exportEditorContent2HTML = () => {
-    exportHTML()
-    document.querySelector(`#output`)!.innerHTML = output.value
-  }
+    exportHTML();
+    document.querySelector(`#output`)!.innerHTML = output.value;
+  };
 
   // 导出编辑器内容到本地
   const exportEditorContent2MD = () => {
-    downloadMD(editor.value!.state.doc.toString())
-  }
+    downloadMD(editor.value!.state.doc.toString());
+  };
 
   // 导入 Markdown 文档
   const importMarkdownContent = () => {
-    const body = document.body
-    const input = document.createElement(`input`)
-    input.type = `file`
-    input.name = `filename`
-    input.accept = `.md`
+    const body = document.body;
+    const input = document.createElement(`input`);
+    input.type = `file`;
+    input.name = `filename`;
+    input.accept = `.md`;
     input.onchange = () => {
-      const file = input.files![0]
+      const file = input.files![0];
       if (!file) {
-        return
+        return;
       }
 
-      const reader = new FileReader()
-      reader.readAsText(file)
+      const reader = new FileReader();
+      reader.readAsText(file);
       // TODO: 导入应该是新文件
       reader.onload = (event) => {
         if (editor.value) {
@@ -536,17 +612,17 @@ export const useStore = defineStore(`store`, () => {
             EditorState.create({
               doc: event.target!.result as string,
               extensions: toRaw(editorExtensions.value),
-            }),
-          )
-          ElMessage.success(`文档导入成功`)
+            })
+          );
+          ElMessage.success(`文档导入成功`);
         }
-      }
-    }
+      };
+    };
 
-    body.appendChild(input)
-    input.click()
-    body.removeChild(input)
-  }
+    body.appendChild(input);
+    input.click();
+    body.removeChild(input);
+  };
 
   // 重置样式
   const resetStyleConfirm = () => {
@@ -557,16 +633,16 @@ export const useStore = defineStore(`store`, () => {
       center: true,
     })
       .then(() => {
-        resetStyle()
+        resetStyle();
         ElMessage({
           type: `success`,
           message: `样式重置成功~`,
-        })
+        });
       })
       .catch(() => {
-        toRaw(editor.value)!.focus()
-      })
-  }
+        toRaw(editor.value)!.focus();
+      });
+  };
 
   return {
     articles,
@@ -587,10 +663,13 @@ export const useStore = defineStore(`store`, () => {
     citeStatusChanged,
 
     output,
+    output2Html,
     editor,
     editorExtensions,
     editorReadTime,
     cssEditor,
+    defaultCssThemes,
+    cssThemeContent,
     theme,
     fontFamily,
     fontSize,
@@ -605,6 +684,7 @@ export const useStore = defineStore(`store`, () => {
     sizeChanged,
     colorChanged,
     codeBlockThemeChanged,
+    fetchCodeBlockThemeContent,
     legendChanged,
     macCodeBlockChanged,
 
@@ -622,27 +702,27 @@ export const useStore = defineStore(`store`, () => {
     setCssEditorValue,
     tabChanged,
     renameTab,
-  }
-})
+  };
+});
 
 export const useDisplayStore = defineStore(`display`, () => {
   // 是否展示 CSS 编辑器
-  const isShowCssEditor = ref(false)
-  const toggleShowCssEditor = useToggle(isShowCssEditor)
+  const isShowCssEditor = ref(false);
+  const toggleShowCssEditor = useToggle(isShowCssEditor);
 
   // 是否展示插入表格对话框
-  const isShowInsertFormDialog = ref(false)
-  const toggleShowInsertFormDialog = useToggle(isShowInsertFormDialog)
+  const isShowInsertFormDialog = ref(false);
+  const toggleShowInsertFormDialog = useToggle(isShowInsertFormDialog);
 
   // 是否展示上传图片对话框
-  const isShowUploadImgDialog = ref(false)
-  const toggleShowUploadImgDialog = useToggle(isShowUploadImgDialog)
+  const isShowUploadImgDialog = ref(false);
+  const toggleShowUploadImgDialog = useToggle(isShowUploadImgDialog);
 
   // 是否显示新增文章对话框
-  const isShowAddArticleDialog = ref(false)
+  const isShowAddArticleDialog = ref(false);
 
   // 是否展示文章提交对话框
-  const isShowArticleSubmitDialog = ref(false)
+  const isShowArticleSubmitDialog = ref(false);
 
   return {
     isShowCssEditor,
@@ -653,8 +733,8 @@ export const useDisplayStore = defineStore(`display`, () => {
     toggleShowUploadImgDialog,
     isShowAddArticleDialog,
     isShowArticleSubmitDialog,
-  }
-})
+  };
+});
 
 export const useAiModelStore = defineStore(`AiModel`, () => {
   const models = reactive<AiModel[]>([
@@ -690,25 +770,25 @@ export const useAiModelStore = defineStore(`AiModel`, () => {
       apiKey: ``,
       refUrl: `https://platform.openai.com/api-keys`,
     },
-  ])
+  ]);
 
   const selectedAiModel = useStorage<AiModel>(
     `selectedAiModel`,
-    toRaw(models[0]),
-  )
+    toRaw(models[0])
+  );
 
   // 显示选择模型面板
-  const isShowSelectAiModelDialog = ref(false)
-  const toggleShowSelectAiModelDialog = useToggle(isShowSelectAiModelDialog)
+  const isShowSelectAiModelDialog = ref(false);
+  const toggleShowSelectAiModelDialog = useToggle(isShowSelectAiModelDialog);
 
   const selectAiModel = (model: AiModel) => {
-    ElMessage.success(`已选择 ${model.name}`)
-    selectedAiModel.value = model
-  }
+    ElMessage.success(`已选择 ${model.name}`);
+    selectedAiModel.value = model;
+  };
 
   // 显示生成面板
-  const isShowPromptDialog = ref(false)
-  const toggleShowPromptDialog = useToggle(isShowPromptDialog)
+  const isShowPromptDialog = ref(false);
+  const toggleShowPromptDialog = useToggle(isShowPromptDialog);
 
   return {
     models,
@@ -718,5 +798,5 @@ export const useAiModelStore = defineStore(`AiModel`, () => {
     selectAiModel,
     isShowPromptDialog,
     toggleShowPromptDialog,
-  }
-})
+  };
+});

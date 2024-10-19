@@ -22,6 +22,7 @@ const store = useStore()
 const { toggleShowCssEditor } = useDisplayStore()
 
 const {
+  defaultCssThemes,
   theme,
   fontFamily,
   fontSize,
@@ -64,7 +65,7 @@ function customStyle() {
     <MenubarContent class="w-56" align="start">
       <StyleOptionMenu
         title="主题"
-        :options="themeOptions"
+        :options="defaultCssThemes"
         :current="theme"
         :change="themeChanged" />
       <MenubarSeparator />

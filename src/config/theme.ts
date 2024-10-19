@@ -1,6 +1,6 @@
-import type { IConfigOption, Theme } from '@/types'
+import type { IConfigOption, Theme } from '@/types';
 
-import { toMerged } from 'es-toolkit'
+import { toMerged } from 'es-toolkit';
 
 const defaultTheme: Theme = {
   base: {
@@ -11,11 +11,11 @@ const defaultTheme: Theme = {
   block: {
     // 一级标题
     h1: {
-      'display': `table`,
-      'padding': `0 1em`,
+      display: `table`,
+      padding: `0 1em`,
       'border-bottom': `2px solid var(--md-primary-color)`,
-      'margin': `2em auto 1em`,
-      'color': `var(--el-text-color-regular)`,
+      margin: `2em auto 1em`,
+      color: `var(--el-text-color-regular)`,
       'font-size': `1.2em`,
       'font-weight': `bold`,
       'text-align': `center`,
@@ -23,11 +23,11 @@ const defaultTheme: Theme = {
 
     // 二级标题
     h2: {
-      'display': `table`,
-      'padding': `0 0.2em`,
-      'margin': `4em auto 2em`,
-      'color': `#fff`,
-      'background': `var(--md-primary-color)`,
+      display: `table`,
+      padding: `0 0.2em`,
+      margin: `4em auto 2em`,
+      color: `#fff`,
+      background: `var(--md-primary-color)`,
       'font-size': `1.2em`,
       'font-weight': `bold`,
       'text-align': `center`,
@@ -37,8 +37,8 @@ const defaultTheme: Theme = {
     h3: {
       'padding-left': `8px`,
       'border-left': `3px solid var(--md-primary-color)`,
-      'margin': `2em 8px 0.75em 0`,
-      'color': `var(--el-text-color-regular)`,
+      margin: `2em 8px 0.75em 0`,
+      color: `var(--el-text-color-regular)`,
       'font-size': `1.1em`,
       'font-weight': `bold`,
       'line-height': `1.2`,
@@ -46,17 +46,17 @@ const defaultTheme: Theme = {
 
     // 四级标题
     h4: {
-      'margin': `2em 8px 0.5em`,
-      'color': `var(--md-primary-color)`,
+      margin: `2em 8px 0.5em`,
+      color: `var(--md-primary-color)`,
       'font-size': `1em`,
       'font-weight': `bold`,
     },
 
     // 段落
     p: {
-      'margin': `1.5em 8px`,
+      margin: `1.5em 8px`,
       'letter-spacing': `0.1em`,
-      'color': `var(--el-text-color-regular)`,
+      color: `var(--el-text-color-regular)`,
       'text-align': `justify`,
     },
 
@@ -64,19 +64,19 @@ const defaultTheme: Theme = {
     blockquote: {
       'font-style': `normal`,
       'border-left': `none`,
-      'padding': `1em`,
+      padding: `1em`,
       'border-radius': `8px`,
-      'color': `rgba(0,0,0,0.5)`,
-      'background': `#f7f7f7`,
-      'margin': `2em 8px`,
+      color: `rgba(0,0,0,0.5)`,
+      background: `#f7f7f7`,
+      margin: `2em 8px`,
     },
 
     // 引用内容
     blockquote_p: {
-      'display': `block`,
+      display: `block`,
       'font-size': `1em`,
       'letter-spacing': `0.1em`,
-      'color': `rgb(80, 80, 80)`,
+      color: `rgb(80, 80, 80)`,
     },
 
     // 代码块
@@ -84,23 +84,23 @@ const defaultTheme: Theme = {
       'font-size': `14px`,
       'overflow-x': `auto`,
       'border-radius': `8px`,
-      'padding': `1em`,
+      padding: `1em`,
       'line-height': `1.5`,
-      'margin': `10px 8px`,
+      margin: `10px 8px`,
     },
 
     // 行内代码
     code: {
-      'margin': 0,
+      margin: 0,
       'white-space': `nowrap`,
       'font-family': `Menlo, Operator Mono, Consolas, Monaco, monospace`,
     },
 
     // 图片
     image: {
-      'display': `block`,
+      display: `block`,
       'max-width': `100% !important`,
-      'margin': `0.1em auto 0.5em`,
+      margin: `0.1em auto 0.5em`,
       'border-radius': `4px`,
     },
 
@@ -108,7 +108,7 @@ const defaultTheme: Theme = {
     ol: {
       'padding-left': `1em`,
       'margin-left': `0`,
-      'color': `var(--el-text-color-regular)`,
+      color: `var(--el-text-color-regular)`,
     },
 
     // 无序列表
@@ -116,13 +116,13 @@ const defaultTheme: Theme = {
       'list-style': `circle`,
       'padding-left': `1em`,
       'margin-left': `0`,
-      'color': `var(--el-text-color-regular)`,
+      color: `var(--el-text-color-regular)`,
     },
 
     footnotes: {
-      'margin': `0.5em 8px`,
+      margin: `0.5em 8px`,
       'font-size': `80%`,
-      'color': `var(--el-text-color-regular)`,
+      color: `var(--el-text-color-regular)`,
     },
 
     figure: {
@@ -137,22 +137,22 @@ const defaultTheme: Theme = {
       '-webkit-transform-origin': `0 0`,
       '-webkit-transform': `scale(1, 0.5)`,
       'transform-origin': `0 0`,
-      'transform': `scale(1, 0.5)`,
+      transform: `scale(1, 0.5)`,
     },
   },
   inline: {
     listitem: {
       'text-indent': `-1em`,
-      'display': `block`,
-      'margin': `0.2em 8px`,
-      'color': `var(--el-text-color-regular)`,
+      display: `block`,
+      margin: `0.2em 8px`,
+      color: `var(--el-text-color-regular)`,
     },
 
     codespan: {
       'font-size': `90%`,
-      'color': `#d14`,
-      'background': `rgba(27,31,35,.05)`,
-      'padding': `3px 5px`,
+      color: `#d14`,
+      background: `rgba(27,31,35,.05)`,
+      padding: `3px 5px`,
       'border-radius': `4px`,
       // 'word-break': `break-all`,
     },
@@ -167,13 +167,13 @@ const defaultTheme: Theme = {
     },
 
     wx_link: {
-      'color': `#576b95`,
+      color: `#576b95`,
       'text-decoration': `none`,
     },
 
     // 字体加粗样式
     strong: {
-      'color': `var(--md-primary-color)`,
+      color: `var(--md-primary-color)`,
       'font-weight': `bold`,
       'font-size': `inherit`,
     },
@@ -181,48 +181,48 @@ const defaultTheme: Theme = {
     table: {
       'border-collapse': `collapse`,
       'text-align': `center`,
-      'margin': `1em 8px`,
-      'color': `var(--el-text-color-regular)`,
+      margin: `1em 8px`,
+      color: `var(--el-text-color-regular)`,
     },
 
     thead: {
-      'background': `rgba(0, 0, 0, 0.05)`,
+      background: `rgba(0, 0, 0, 0.05)`,
       'font-weight': `bold`,
-      'color': `var(--el-text-color-regular)`,
+      color: `var(--el-text-color-regular)`,
     },
 
     td: {
-      'border': `1px solid #dfdfdf`,
-      'padding': `0.25em 0.5em`,
-      'color': `#3f3f3f`,
+      border: `1px solid #dfdfdf`,
+      padding: `0.25em 0.5em`,
+      color: `#3f3f3f`,
       'word-break': `keep-all`,
     },
 
     footnote: {
       'font-size': `12px`,
-      'color': `var(--el-text-color-regular)`,
+      color: `var(--el-text-color-regular)`,
     },
 
     figcaption: {
       'text-align': `center`,
-      'color': `#888`,
+      color: `#888`,
       'font-size': `0.8em`,
     },
   },
-}
+};
 
 const graceTheme = toMerged(defaultTheme, {
   base: {},
   block: {
     h1: {
-      'padding': `0.5em 1em`,
+      padding: `0.5em 1em`,
       'border-bottom': `2px solid var(--md-primary-color)`,
       'font-size': `1.4em`,
       'text-shadow': `2px 2px 4px rgba(0,0,0,0.1)`,
     },
 
     h2: {
-      'padding': `0.3em 1em`,
+      padding: `0.3em 1em`,
       'border-radius': `8px`,
       'font-size': `1.3em`,
       'box-shadow': `0 4px 6px rgba(0,0,0,0.1)`,
@@ -243,11 +243,11 @@ const graceTheme = toMerged(defaultTheme, {
 
     blockquote: {
       'font-style': `italic`,
-      'padding': `1em 1em 1em 2em`,
+      padding: `1em 1em 1em 2em`,
       'border-left': `4px solid var(--md-primary-color)`,
       'border-radius': `6px`,
-      'color': `rgba(0,0,0,0.6)`,
-      'background': `linear-gradient(to right, #f7f7f7, #ffffff)`,
+      color: `rgba(0,0,0,0.6)`,
+      background: `linear-gradient(to right, #f7f7f7, #ffffff)`,
       'box-shadow': `0 4px 6px rgba(0,0,0,0.05)`,
     },
 
@@ -306,10 +306,10 @@ const graceTheme = toMerged(defaultTheme, {
       'border-collapse': `separate`,
       'border-spacing': `0`,
       'border-radius': `8px`,
-      'margin': `1em 8px`,
-      'color': `var(--el-text-color-regular)`,
+      margin: `1em 8px`,
+      color: `var(--el-text-color-regular)`,
       'box-shadow': `0 4px 6px rgba(0,0,0,0.1)`,
-      'overflow': `hidden`,
+      overflow: `hidden`,
     },
 
     thead: {
@@ -326,12 +326,12 @@ const graceTheme = toMerged(defaultTheme, {
 
     figcaption: {},
   },
-})
+});
 
 export const themeMap = {
   default: defaultTheme,
   grace: graceTheme,
-}
+};
 
 export const themeOptions: IConfigOption<keyof typeof themeMap>[] = [
   {
@@ -344,4 +344,4 @@ export const themeOptions: IConfigOption<keyof typeof themeMap>[] = [
     value: `grace`,
     desc: ``,
   },
-]
+];

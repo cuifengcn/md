@@ -1,0 +1,142 @@
+* {
+  --md-primary-color: green;
+  line-height: 1.75;
+}
+h1 {
+  padding: 0.5em 1em;
+  border-bottom: 2px solid var(--md-primary-color);
+  font-size: 1.4em;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+h2 {
+  padding: 0.3em 1em;
+  border-radius: 8px;
+  font-size: 1.3em;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+h3 {
+  padding-left: 12px;
+  font-size: 1.2em;
+  border-left: 4px solid var(--md-primary-color);
+  border-bottom: 1px dashed var(--md-primary-color);
+}
+
+h4 {
+  font-size: 1.1em;
+}
+
+p {
+}
+
+blockquote {
+  font-style: italic;
+  padding: 1em 1em 1em 2em;
+  border-left: 4px solid var(--md-primary-color);
+  border-radius: 6px;
+  color: rgba(0, 0, 0, 0.6);
+  background: linear-gradient(to right, #f7f7f7, #ffffff);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin: 1em 0px;
+}
+
+blockquote_p {
+}
+
+code_pre {
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+code {
+  white-space: pre-wrap;
+  font-family:
+    Fira Code,
+    Menlo,
+    Operator Mono,
+    Consolas,
+    Monaco,
+    monospace;
+}
+
+image {
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+ol {
+  padding-left: 1.5em;
+}
+
+ul {
+  list-style: none;
+  padding-left: 1.5em;
+}
+
+footnotes {
+}
+
+figure {
+}
+
+hr {
+  height: 1px;
+  border: none;
+  margin: 2em 0;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0),
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+listitem {
+  margin: 0.5em 8px;
+  text-indent: -1em;
+  display: block;
+  color: var(--el-text-color-regular);
+}
+
+codespan {
+}
+
+em {
+}
+
+link {
+}
+
+wx_link {
+}
+
+strong {
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  margin: 1em 8px;
+  color: var(--el-text-color-regular);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+thead {
+  color: var(--md-primary-color);
+  word-break: keep-all;
+}
+
+td {
+  padding: 0.5em 1em;
+}
+
+footnote {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+figcaption {
+}

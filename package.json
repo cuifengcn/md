@@ -17,12 +17,12 @@
     "preview": "npm run build && vite preview",
     "release:cli": "node ./bin/release.js",
     "lint": "eslint . --fix",
-    "type-check": "vue-tsc --build --force",
-    "postinstall": "simple-git-hooks"
+    "type-check": "vue-tsc --build --force"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.1",
     "@codemirror/commands": "^6.6.2",
+    "@codemirror/lang-css": "^6.3.0",
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lang-markdown": "^6.3.0",
     "@codemirror/language": "^6.10.3",
@@ -31,6 +31,7 @@
     "@codemirror/view": "^6.34.1",
     "@element-plus/icons-vue": "^2.3.1",
     "@iconify/vue": "^4.1.2",
+    "@vue-styled-components/core": "^1.8.0",
     "@vueuse/core": "^11.1.0",
     "axios": "^1.7.7",
     "buffer-from": "^1.1.2",
@@ -46,6 +47,7 @@
     "form-data": "4.0.0",
     "highlight.js": "^11.10.0",
     "juice": "^11.0.0",
+    "lru-cache": "^11.0.1",
     "lucide-vue-next": "^0.441.0",
     "marked": "^14.1.2",
     "memfs": "^4.12.0",
@@ -94,11 +96,5 @@
     "vite-plugin-node-polyfills": "^0.22.0",
     "vite-plugin-vue-devtools": "^7.4.5",
     "vue-tsc": "^2.1.6"
-  },
-  "simple-git-hooks": {
-    "pre-commit": "npx lint-staged"
-  },
-  "lint-staged": {
-    "*": "npm run lint"
   }
 }

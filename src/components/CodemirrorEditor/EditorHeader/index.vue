@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
-import {
-  Menubar,
-} from '@/components/ui/menubar'
+import { Button } from '@/components/ui/button';
+import { Menubar } from '@/components/ui/menubar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@/components/ui/popover';
 
 import {
   Select,
@@ -15,7 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
 import {
   codeBlockThemeOptions,
   colorOptions,
@@ -23,95 +21,79 @@ import {
   fontSizeOptions,
   legendOptions,
   themeOptions,
-} from '@/config'
-import { useDisplayStore, useStore } from '@/stores'
-import { mergeCss, solveWeChatImage } from '@/utils'
-import { ElNotification } from 'element-plus'
-import { Moon, Paintbrush, Sun } from 'lucide-vue-next'
+} from '@/config';
+import { useDisplayStore, useStore } from '@/stores';
+import { mergeCss, solveWeChatImage } from '@/utils';
+import { ElNotification } from 'element-plus';
+import { Moon, Paintbrush, Sun } from 'lucide-vue-next';
 
-import { storeToRefs } from 'pinia'
-import { nextTick, toRaw } from 'vue'
-import EditDropdown from './EditDropdown.vue'
-import FileDropdown from './FileDropdown.vue'
-import FormatDropdown from './FormatDropdown.vue'
-import HelpDropdown from './HelpDropdown.vue'
+import { storeToRefs } from 'pinia';
+import { nextTick, toRaw } from 'vue';
+import EditDropdown from './EditDropdown.vue';
+import FileDropdown from './FileDropdown.vue';
+import FormatDropdown from './FormatDropdown.vue';
+import HelpDropdown from './HelpDropdown.vue';
 
-import PostInfo from './PostInfo.vue'
-import StyleDropdown from './StyleDropdown.vue'
+import PostInfo from './PostInfo.vue';
+import StyleDropdown from './StyleDropdown.vue';
 
 const emit = defineEmits([
   `addFormat`,
   `formatContent`,
   `startCopy`,
   `endCopy`,
-])
+]);
 
-const store = useStore()
-const displayStore = useDisplayStore()
+const store = useStore();
+const displayStore = useDisplayStore();
 
-const { isDark, output, primaryColor } = storeToRefs(store)
+const { isDark, primaryColor } = storeToRefs(store);
 
-const { toggleDark, editorRefresh } = store
+const { toggleDark, editorRefresh } = store;
 
-const themeIcons = [Sun, Moon]
+const themeIcons = [Sun, Moon];
 function toggleTheme() {
-  store.toggleDark()
+  store.toggleDark();
 }
 
 // 复制到微信公众号
 function copy() {
-  emit(`startCopy`)
+  emit(`startCopy`);
   setTimeout(() => {
-    function modifyHtmlStructure(htmlString: string) {
-      // 创建一个 div 元素来暂存原始 HTML 字符串
-      const tempDiv = document.createElement(`div`)
-      tempDiv.innerHTML = htmlString
+    // function modifyHtmlStructure(htmlString: string) {
+    //   // 创建一个 div 元素来暂存原始 HTML 字符串
+    //   const tempDiv = document.createElement(`div`);
+    //   tempDiv.innerHTML = htmlString;
 
-      const originalItems = tempDiv.querySelectorAll(`li > ul, li > ol`)
+    //   const originalItems = tempDiv.querySelectorAll(`li > ul, li > ol`);
 
-      originalItems.forEach((originalItem) => {
-        originalItem.parentElement!.insertAdjacentElement(
-          `afterend`,
-          originalItem,
-        )
-      })
+    //   originalItems.forEach((originalItem) => {
+    //     originalItem.parentElement!.insertAdjacentElement(
+    //       `afterend`,
+    //       originalItem
+    //     );
+    //   });
 
-      // 返回修改后的 HTML 字符串
-      return tempDiv.innerHTML
-    }
+    //   // 返回修改后的 HTML 字符串
+    //   return tempDiv.innerHTML;
+    // }
 
     // 如果是深色模式，复制之前需要先切换到白天模式
-    const isBeforeDark = isDark.value
+    const isBeforeDark = isDark.value;
     if (isBeforeDark) {
-      toggleDark()
+      toggleDark();
     }
 
-    nextTick(() => {
-      solveWeChatImage()
+    nextTick(async () => {
+      solveWeChatImage();
 
-      const clipboardDiv = document.getElementById(`output`)!
-      clipboardDiv.innerHTML = mergeCss(clipboardDiv.innerHTML)
-      clipboardDiv.innerHTML = modifyHtmlStructure(clipboardDiv.innerHTML)
-      clipboardDiv.innerHTML = clipboardDiv.innerHTML
-        // 公众号不支持 position， 转换为等价的 translateY
-        .replace(/top:(.*?)em/g, `transform: translateY($1em)`)
-        // 适配主题中的颜色变量
-        .replaceAll(`var(--el-text-color-regular)`, `#3f3f3f`)
-        .replaceAll(`var(--md-primary-color)`, primaryColor.value)
-        .replaceAll(/--md-primary-color:.+?;/g, ``)
-      clipboardDiv.focus()
-      window.getSelection()!.removeAllRanges()
-      const range = document.createRange()
-
-      range.setStartBefore(clipboardDiv.firstChild!)
-      range.setEndAfter(clipboardDiv.lastChild!)
-      window.getSelection()!.addRange(range)
-      document.execCommand(`copy`)
-      window.getSelection()!.removeAllRanges()
-      clipboardDiv.innerHTML = output.value
+      const content = await store.output2Html();
+      const blob = new Blob([content], { type: `text/html` });
+      const clipboardItem = new ClipboardItem({ 'text/html': blob });
+      navigator.clipboard.write([clipboardItem]);
 
       if (isBeforeDark) {
-        nextTick(() => toggleDark())
+        nextTick(() => toggleDark());
       }
 
       // 输出提示
@@ -121,19 +103,19 @@ function copy() {
         offset: 80,
         duration: 1600,
         type: `success`,
-      })
+      });
 
-      editorRefresh()
-      emit(`endCopy`)
-    })
-  }, 350)
+      editorRefresh();
+      emit(`endCopy`);
+    });
+  }, 350);
 }
 
 function customStyle() {
-  displayStore.toggleShowCssEditor()
+  displayStore.toggleShowCssEditor();
   setTimeout(() => {
-    toRaw(store.cssEditor)!.dispatch()
-  }, 50)
+    toRaw(store.cssEditor)!.dispatch();
+  }, 50);
 }
 </script>
 
@@ -144,7 +126,8 @@ function customStyle() {
 
       <FormatDropdown
         @add-format="(cmd: string | number) => emit('addFormat', cmd)"
-        @format-content="() => emit('formatContent')" />
+        @format-content="() => emit('formatContent')"
+      />
       <EditDropdown />
       <StyleDropdown />
       <HelpDropdown />
@@ -175,7 +158,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.theme === value,
                 }"
-                @click="store.themeChanged(value)">
+                @click="store.themeChanged(value)"
+              >
                 {{ label }}
               </Button>
             </div>
@@ -191,7 +175,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.fontFamily === value,
                 }"
-                @click="store.fontChanged(value)">
+                @click="store.fontChanged(value)"
+              >
                 {{ label }}
               </Button>
             </div>
@@ -207,7 +192,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.fontSize === value,
                 }"
-                @click="store.sizeChanged(value)">
+                @click="store.sizeChanged(value)"
+              >
                 {{ desc }}
               </Button>
             </div>
@@ -224,12 +210,14 @@ function customStyle() {
                   'border-black dark:border-white':
                     store.primaryColor === value,
                 }"
-                @click="store.colorChanged(value)">
+                @click="store.colorChanged(value)"
+              >
                 <span
                   class="mr-2 inline-block h-4 w-4 rounded-full"
                   :style="{
                     background: value,
-                  }" />
+                  }"
+                />
                 {{ label }}
               </Button>
             </div>
@@ -241,7 +229,8 @@ function customStyle() {
                 v-model="primaryColor"
                 :teleported="false"
                 show-alpha
-                @change="store.colorChanged" />
+                @change="store.colorChanged"
+              />
             </div>
           </div>
           <div class="space-y-2">
@@ -249,7 +238,8 @@ function customStyle() {
             <div>
               <Select
                 v-model="store.codeBlockTheme"
-                @update:model-value="store.codeBlockThemeChanged">
+                @update:model-value="store.codeBlockThemeChanged"
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a fruit" />
                 </SelectTrigger>
@@ -257,7 +247,8 @@ function customStyle() {
                   <SelectItem
                     v-for="{ label, value } in codeBlockThemeOptions"
                     :key="label"
-                    :value="value">
+                    :value="value"
+                  >
                     {{ label }}
                   </SelectItem>
                 </SelectContent>
@@ -275,7 +266,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.legend === value,
                 }"
-                @click="store.legendChanged(value)">
+                @click="store.legendChanged(value)"
+              >
                 {{ label }}
               </Button>
             </div>
@@ -290,7 +282,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.isMacCodeBlock,
                 }"
-                @click="!store.isMacCodeBlock && store.macCodeBlockChanged()">
+                @click="!store.isMacCodeBlock && store.macCodeBlockChanged()"
+              >
                 开启
               </Button>
               <Button
@@ -299,7 +292,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': !store.isMacCodeBlock,
                 }"
-                @click="store.isMacCodeBlock && store.macCodeBlockChanged()">
+                @click="store.isMacCodeBlock && store.macCodeBlockChanged()"
+              >
                 关闭
               </Button>
             </div>
@@ -313,7 +307,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.isCiteStatus,
                 }"
-                @click="!store.isCiteStatus && store.citeStatusChanged()">
+                @click="!store.isCiteStatus && store.citeStatusChanged()"
+              >
                 开启
               </Button>
               <Button
@@ -322,7 +317,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': !store.isCiteStatus,
                 }"
-                @click="store.isCiteStatus && store.citeStatusChanged()">
+                @click="store.isCiteStatus && store.citeStatusChanged()"
+              >
                 关闭
               </Button>
             </div>
@@ -337,7 +333,8 @@ function customStyle() {
                   'border-black dark:border-white':
                     displayStore.isShowCssEditor,
                 }"
-                @click="!displayStore.isShowCssEditor && customStyle()">
+                @click="!displayStore.isShowCssEditor && customStyle()"
+              >
                 开启
               </Button>
               <Button
@@ -347,7 +344,8 @@ function customStyle() {
                   'border-black dark:border-white':
                     !displayStore.isShowCssEditor,
                 }"
-                @click="displayStore.isShowCssEditor && customStyle()">
+                @click="displayStore.isShowCssEditor && customStyle()"
+              >
                 关闭
               </Button>
             </div>
@@ -361,7 +359,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': store.isEditOnLeft,
                 }"
-                @click="!store.isEditOnLeft && store.toggleEditOnLeft()">
+                @click="!store.isEditOnLeft && store.toggleEditOnLeft()"
+              >
                 左侧
               </Button>
               <Button
@@ -370,7 +369,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': !store.isEditOnLeft,
                 }"
-                @click="store.isEditOnLeft && store.toggleEditOnLeft()">
+                @click="store.isEditOnLeft && store.toggleEditOnLeft()"
+              >
                 右侧
               </Button>
             </div>
@@ -384,7 +384,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': !isDark,
                 }"
-                @click="store.toggleDark(false)">
+                @click="store.toggleDark(false)"
+              >
                 <Sun class="h-4 w-4" />
               </Button>
               <Button
@@ -393,7 +394,8 @@ function customStyle() {
                 :class="{
                   'border-black dark:border-white': isDark,
                 }"
-                @click="store.toggleDark(true)">
+                @click="store.toggleDark(true)"
+              >
                 <Moon class="h-4 w-4" />
               </Button>
             </div>
@@ -409,9 +411,7 @@ function customStyle() {
         </div>
       </PopoverContent>
     </Popover>
-    <Button variant="outline" class="mx-2" @click="copy">
-      复制
-    </Button>
+    <Button variant="outline" class="mx-2" @click="copy"> 复制 </Button>
 
     <PostInfo />
   </header>

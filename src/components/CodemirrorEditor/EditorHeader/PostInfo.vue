@@ -1,104 +1,104 @@
 <script setup lang="ts">
-import ArticleSubmit from '@/components/article/ArticleSubmit.vue'
-import ArticleSync from '@/components/article/ArticleSync.vue'
+import ArticleSubmit from '@/components/article/ArticleSubmit.vue';
+import ArticleSync from '@/components/article/ArticleSync.vue';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { useDisplayStore, useStore } from '@/stores'
+} from '@/components/ui/dialog';
+import { useDisplayStore, useStore } from '@/stores';
 
-import { ElMessage } from 'element-plus'
-import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { ElMessage } from 'element-plus';
+import { storeToRefs } from 'pinia';
+import { ref } from 'vue';
 
 interface Form {
-  title?: string
-  desc?: string
-  thumb?: string
-  content?: string
+  title?: string;
+  desc?: string;
+  thumb?: string;
+  content?: string;
+  html?: string;
   auto?: {
-    title?: string
-    desc?: string
-    thumb?: string
-    content?: string
-  }
+    title?: string;
+    desc?: string;
+    thumb?: string;
+    content?: string;
+  };
 }
 
-const store = useStore()
-const displayStore = useDisplayStore()
-const { output } = storeToRefs(store)
+const store = useStore();
+const displayStore = useDisplayStore();
+const { output } = storeToRefs(store);
 
-const dialogVisible = ref(false)
+const dialogVisible = ref(false);
 
 const form = ref<Form>({
   title: ``,
   desc: ``,
   thumb: ``,
   content: ``,
+  html: ``,
   auto: {},
-})
+});
 
-const selectedAccounts = ref([])
+const selectedAccounts = ref([]);
 
 function prePost() {
-  let auto = {}
+  let auto = {};
   try {
     auto = {
       thumb: document.querySelector<HTMLImageElement>(`#output img`)?.src || ``,
       title:
         [1, 2, 3, 4, 5, 6]
-          .map(h => document.querySelector(`#output h${h}`)!)
+          .map((h) => document.querySelector(`#output h${h}`)!)
           // eslint-disable-next-line antfu/consistent-chaining
-          .filter(h => h)[0].textContent || ``,
+          .filter((h) => h)[0].textContent || ``,
       desc: document.querySelector(`#output p`)!.textContent || ``,
       content: output.value,
-    }
-  }
-  catch (error) {
-    console.log(`error`, error)
+    };
+  } catch (error) {
+    console.log(`error`, error);
   }
   form.value = {
     ...auto,
     auto,
-  }
-  dialogVisible.value = true
+  };
+  dialogVisible.value = true;
 }
 
-function post() {
+async function post() {
   if (!form.value.title) {
-    ElMessage.warning(`请输入标题`)
-    return
+    ElMessage.warning(`请输入标题`);
+    return;
   }
   if (!form.value.desc) {
-    ElMessage.warning(`请输入描述`)
-    return
+    ElMessage.warning(`请输入描述`);
+    return;
   }
   if (!form.value.content) {
-    ElMessage.warning(`文章内容为空`)
-    return
+    ElMessage.warning(`文章内容为空`);
+    return;
   }
   if (!window.$syncer) {
-    ElMessage.warning(`请先安装插件`)
-    return
+    ElMessage.warning(`请先安装插件`);
+    return;
   }
-  displayStore.isShowArticleSubmitDialog = true
-  dialogVisible.value = false
+  form.value.html = await store.output2Html();
+  displayStore.isShowArticleSubmitDialog = true;
+  dialogVisible.value = false;
 }
 
 function onUpdate(val: boolean) {
   if (!val) {
-    dialogVisible.value = false
+    dialogVisible.value = false;
   }
 }
 </script>
 
 <template>
-  <Button variant="outline" @click="prePost">
-    发布
-  </Button>
+  <Button variant="outline" @click="prePost"> 发布 </Button>
   <ArticleSubmit :form="form" :selected-accounts="selectedAccounts" />
 
   <Dialog :open="dialogVisible" @update:open="onUpdate">
@@ -109,7 +109,8 @@ function onUpdate(val: boolean) {
       <el-alert
         title="注：此功能由第三方浏览器插件支持，本平台不保证安全性。"
         type="info"
-        show-icon />
+        show-icon
+      />
       <el-form class="postInfo" label-width="50" :model="form">
         <el-form-item label="封面">
           <el-input v-model="form.thumb" placeholder="自动提取第一张图" />
@@ -122,7 +123,8 @@ function onUpdate(val: boolean) {
             v-model="form.desc"
             type="textarea"
             :rows="4"
-            placeholder="自动提取第一个段落" />
+            placeholder="自动提取第一个段落"
+          />
         </el-form-item>
       </el-form>
       <ArticleSync v-model="selectedAccounts" :form="form" />
@@ -131,9 +133,7 @@ function onUpdate(val: boolean) {
         <Button variant="outline" @click="dialogVisible = false">
           取 消
         </Button>
-        <Button @click="post">
-          确 定
-        </Button>
+        <Button @click="post"> 确 定 </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

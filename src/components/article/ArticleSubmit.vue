@@ -1,39 +1,38 @@
 <script setup lang="ts">
-import type { PostArticleAccount } from '@/types'
-import { useDisplayStore } from '@/stores'
-import { storeToRefs } from 'pinia'
-import { ref, watch } from 'vue'
-import { Dialog, DialogContent } from '../ui/dialog'
+import type { PostArticleAccount } from '@/types';
+import { useDisplayStore } from '@/stores';
+import { storeToRefs } from 'pinia';
+import { ref, watch } from 'vue';
+import { Dialog, DialogContent } from '../ui/dialog';
 
 const props = defineProps({
   form: Object as () => {
-    title?: string
-    desc?: string
-    thumb?: string
-    content?: string
+    title?: string;
+    desc?: string;
+    thumb?: string;
+    content?: string;
+    html?: string;
   },
   selectedAccounts: {
     type: Array as () => PostArticleAccount[],
     default: () => [],
   },
-})
-const displayStore = useDisplayStore()
-const { isShowArticleSubmitDialog } = storeToRefs(displayStore)
+});
+const displayStore = useDisplayStore();
+const { isShowArticleSubmitDialog } = storeToRefs(displayStore);
 
-const submitting = ref(false)
-const taskStatus = ref()
+const submitting = ref(false);
+const taskStatus = ref();
 
 function post() {
-  if (!props.form)
-    return
-  if (props.selectedAccounts.length === 0)
-    return
+  if (!props.form) return;
+  if (props.selectedAccounts.length === 0) return;
 
   window.$syncer?.addTask(
     {
       post: {
         title: props.form.title,
-        content: props.form.content,
+        content: props.form.html || props.form.content,
         markdown: props.form.content,
         thumb: props.form.thumb,
         desc: props.form.desc,
@@ -41,26 +40,26 @@ function post() {
       accounts: props.selectedAccounts,
     },
     (newStatus) => {
-      taskStatus.value = newStatus
+      taskStatus.value = newStatus;
     },
     () => {
-      submitting.value = false
-    },
-  )
+      submitting.value = false;
+    }
+  );
 
-  submitting.value = true
+  submitting.value = true;
 }
 
 watch(isShowArticleSubmitDialog, (val) => {
   if (val) {
-    post()
+    post();
   }
-})
+});
 
 function onUpdate(val: boolean) {
   if (!val) {
     // if (submitting.value) return;
-    displayStore.isShowArticleSubmitDialog = false
+    displayStore.isShowArticleSubmitDialog = false;
   }
 }
 </script>
@@ -69,19 +68,19 @@ function onUpdate(val: boolean) {
   <Dialog :open="isShowArticleSubmitDialog" @update:open="onUpdate">
     <DialogContent>
       <DialogTitle>提交发布任务</DialogTitle>
-      <div v-if="!taskStatus?.accounts">
-        等待发布..
-      </div>
+      <div v-if="!taskStatus?.accounts">等待发布..</div>
       <div v-else class="max-h-[600px] overflow-y-scroll">
         <div
           v-for="account in taskStatus?.accounts"
           :key="account.uid"
-          class="account-item taskStatus">
+          class="account-item taskStatus"
+        >
           <el-row align="middle" class="mb-2 gap-2">
             <img
               v-if="account.icon"
               :src="account.icon ? account.icon : ''"
-              class="icon h-[20px]" />
+              class="icon h-[20px]"
+            />
             <el-icon v-else>
               <ElIconUserFilled />
             </el-icon>
@@ -104,7 +103,9 @@ function onUpdate(val: boolean) {
                 :href="account.editResp.draftLink"
                 style="margin-left: 5px"
                 referrerPolicy="no-referrer"
-                target="_blank">查看草稿</el-link>
+                target="_blank"
+                >查看草稿</el-link
+              >
             </template>
           </span>
           <el-divider />

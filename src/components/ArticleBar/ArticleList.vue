@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { useStore } from '@/stores'
-import { storeToRefs } from 'pinia'
-import ArticleItem from './ArticleItem.vue'
+import { useStore } from '@/stores';
+import { storeToRefs } from 'pinia';
+import ArticleItem from './ArticleItem.vue';
 
-const store = useStore()
+const store = useStore();
 
-const { articles } = storeToRefs(store)
+const { articles } = storeToRefs(store);
 </script>
 
 <template>
   <TransitionGroup
     tag="div"
     name="list"
-    class="mb-[20px] flex flex-1 flex-col overflow-y-auto border-1 rounded">
+    class="mb-[20px] flex flex-1 flex-col overflow-y-auto border-1 rounded"
+  >
     <template v-for="item in articles" :key="item.id">
       <ArticleItem :article="item" />
     </template>

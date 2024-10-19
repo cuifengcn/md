@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import type { IConfigOption } from '@/types'
+import type { IConfigOption, PreviewTheme, ThemeStyles } from '@/types';
 import {
   MenubarItem,
   MenubarSub,
   MenubarSubContent,
   MenubarSubTrigger,
-} from '@/components/ui/menubar'
+} from '@/components/ui/menubar';
 
 const props = defineProps<{
-  title: string
-  options: IConfigOption[]
-  current: string
-  change: <T>(val: T) => void
-}>()
+  title: string;
+  options: IConfigOption[];
+  current: string;
+  change: <T>(val: T) => void;
+}>();
 
 function setStyle(title: string, value: string) {
   switch (title) {
     case `字体`:
-      return { fontFamily: value }
+      return { fontFamily: value };
     case `字号`:
-      return { fontSize: value }
+      return { fontSize: value };
     case `主题色`:
-      return { color: value }
+      return { color: value };
     default:
-      return {}
+      return {};
   }
 }
 </script>
@@ -41,8 +41,12 @@ function setStyle(title: string, value: string) {
         :label="label"
         :model-value="value"
         class="w-50"
-        @click="change(value)">
-        <el-icon class="mr-2 h-4 w-4" :style="{ opacity: +(current === value) }">
+        @click="change(value)"
+      >
+        <el-icon
+          class="mr-2 h-4 w-4"
+          :style="{ opacity: +(current === value) }"
+        >
           <ElIconCheck />
         </el-icon>
         {{ label }}

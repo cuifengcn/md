@@ -1,4 +1,4 @@
-import type { PropertiesHyphen } from 'csstype'
+import type { PropertiesHyphen } from 'csstype';
 
 export type Block =
   | `h1`
@@ -15,7 +15,7 @@ export type Block =
   | `ul`
   | `footnotes`
   | `figure`
-  | `hr`
+  | `hr`;
 export type Inline =
   | `listitem`
   | `codespan`
@@ -27,55 +27,61 @@ export type Inline =
   | `td`
   | `footnote`
   | `figcaption`
-  | `em`
+  | `em`;
 
 interface CustomCSSProperties {
-  [`--md-primary-color`]?: string
-  [key: `--${string}`]: string | undefined
+  [`--md-primary-color`]?: string;
+  [key: `--${string}`]: string | undefined;
 }
 
-export type ExtendedProperties = PropertiesHyphen & CustomCSSProperties
+export type ExtendedProperties = PropertiesHyphen & CustomCSSProperties;
 
 export interface Theme {
-  base: ExtendedProperties
-  block: Record<Block, PropertiesHyphen>
-  inline: Record<Inline, PropertiesHyphen>
+  base: ExtendedProperties;
+  block: Record<Block, PropertiesHyphen>;
+  inline: Record<Inline, PropertiesHyphen>;
 }
 
 export interface IOpts {
-  theme: Theme
-  fonts: string
-  size: string
-  legend?: string
-  status?: boolean
+  theme?: Theme;
+  fonts: string;
+  size: string;
+  legend?: string;
+  status?: boolean;
 }
 
-export type ThemeStyles = Record<Block | Inline, ExtendedProperties>
+export type ThemeStyles = Record<Block | Inline, ExtendedProperties>;
 
 export interface IConfigOption<VT = string> {
-  label: string
-  value: VT
-  desc: string
+  label: string;
+  value: VT;
+  desc: string;
+}
+
+export interface PreviewTheme {
+  label: string;
+  name: string;
+  content: string;
 }
 
 export interface Article {
-  id: string
-  title?: string // 标题
-  content?: string // 内容
-  desc?: string // 描述
-  thumb?: string // 封面
-  createTs?: number
+  id: string;
+  title?: string; // 标题
+  content?: string; // 内容
+  desc?: string; // 描述
+  thumb?: string; // 封面
+  createTs?: number;
 }
 
 export interface AiModel {
-  name: string
-  from: string
-  desc?: string
-  baseUrl: string
-  apiKey?: string
-  refUrl?: string
-  temperature?: number
-  maxTokens?: number
+  name: string;
+  from: string;
+  desc?: string;
+  baseUrl: string;
+  apiKey?: string;
+  refUrl?: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 export enum AiGenerateType {
@@ -85,15 +91,15 @@ export enum AiGenerateType {
 }
 
 export interface PostArticleAccount {
-  avatar: string
-  displayName: string
-  home: string
-  icon: string
-  supportTypes: string[]
-  title: string
-  type: string
-  uid: string
-  checked?: boolean
-  status?: string
-  error?: string
+  avatar: string;
+  displayName: string;
+  home: string;
+  icon: string;
+  supportTypes: string[];
+  title: string;
+  type: string;
+  uid: string;
+  checked?: boolean;
+  status?: string;
+  error?: string;
 }

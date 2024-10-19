@@ -1,25 +1,24 @@
-import type { Extension } from '@codemirror/state'
-import type { KeyBinding, ViewUpdate } from '@codemirror/view'
-import { altKey, ctrlKey, shiftKey } from '@/config'
-import {
-  autocompletion,
-  closeBrackets,
-} from '@codemirror/autocomplete'
+import type { Extension } from '@codemirror/state';
+import type { KeyBinding, ViewUpdate } from '@codemirror/view';
+import { altKey, ctrlKey, shiftKey } from '@/config';
+import { autocompletion, closeBrackets } from '@codemirror/autocomplete';
 import {
   defaultKeymap,
   history,
   historyKeymap,
   indentWithTab,
-} from '@codemirror/commands'
-import { markdown } from '@codemirror/lang-markdown'
+} from '@codemirror/commands';
+import { css as cssExtension } from '@codemirror/lang-css';
+import { markdown } from '@codemirror/lang-markdown';
 import {
   bracketMatching,
   defaultHighlightStyle,
   indentOnInput,
   syntaxHighlighting,
-} from '@codemirror/language'
-import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
-import { Compartment, EditorState } from '@codemirror/state'
+} from '@codemirror/language';
+import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
+import { Compartment, EditorState } from '@codemirror/state';
+
 import {
   crosshairCursor,
   drawSelection,
@@ -27,14 +26,14 @@ import {
   EditorView,
   highlightActiveLine,
   keymap,
-} from '@codemirror/view'
+} from '@codemirror/view';
+import { ayuLight } from 'thememirror';
+import { formatDoc } from '..';
+import MyEditorView from './editor';
+import { InlineSuggestion } from './plugins/inlineSuggestion';
 
-import { ayuLight } from 'thememirror'
-import { formatDoc } from '..'
-import MyEditorView from './editor'
-
-export { EditorState } from '@codemirror/state'
-export { EditorView } from '@codemirror/view'
+export { EditorState } from '@codemirror/state';
+export { EditorView } from '@codemirror/view';
 
 function replceSelection(
   view: EditorView,
@@ -42,23 +41,22 @@ function replceSelection(
     text: string,
     from: number,
     to: number
-  ) => { newText: string, from?: number, to?: number },
+  ) => { newText: string; from?: number; to?: number }
 ) {
-  const selection = view.state.selection
-  const main = selection.main
-  if (main.empty)
-    return
-  const selectedText = view.state.doc.sliceString(main.from, main.to)
-  const replacerResult = replacer(selectedText, main.from, main.to)
-  view.dispatch(view.state.replaceSelection(replacerResult.newText))
+  const selection = view.state.selection;
+  const main = selection.main;
+  if (main.empty) return;
+  const selectedText = view.state.doc.sliceString(main.from, main.to);
+  const replacerResult = replacer(selectedText, main.from, main.to);
+  view.dispatch(view.state.replaceSelection(replacerResult.newText));
   view.dispatch({
     selection: {
       anchor: replacerResult.from || main.from,
       head: replacerResult.to || main.to,
     },
     scrollIntoView: true,
-  })
-  view.focus()
+  });
+  view.focus();
 }
 
 export const keymapActions: KeyBinding[] = [
@@ -69,11 +67,11 @@ export const keymapActions: KeyBinding[] = [
         editor.dispatch(
           editor.state.update({
             changes: { from: 0, to: doc.length, insert: doc },
-          }),
-        )
-      })
-      editor.focus()
-      return false
+          })
+        );
+      });
+      editor.focus();
+      return false;
     },
   },
   {
@@ -86,18 +84,17 @@ export const keymapActions: KeyBinding[] = [
             newText: text.slice(2, -2),
             from,
             to: to - 4,
-          }
-        }
-        else {
+          };
+        } else {
           // 加粗
           return {
             newText: `**${text}**`,
             from,
             to: to + 4,
-          }
+          };
         }
-      })
-      return false
+      });
+      return false;
     },
   },
   {
@@ -105,23 +102,23 @@ export const keymapActions: KeyBinding[] = [
     run: function italic(editor: EditorView): boolean {
       replceSelection(editor, (text, from, to) => {
         if (
-          text.length >= 6
-          && text.startsWith(`***`)
-          && text.endsWith(`***`)
+          text.length >= 6 &&
+          text.startsWith(`***`) &&
+          text.endsWith(`***`)
         ) {
           // 取消斜体
           return {
             newText: text.slice(1, -1),
             from,
             to: to - 2,
-          }
+          };
         }
         if (text.length >= 4 && text.startsWith(`**`) && text.endsWith(`**`)) {
           return {
             newText: `*${text}*`,
             from,
             to: to + 2,
-          }
+          };
         }
         if (text.length >= 2 && text.startsWith(`*`) && text.endsWith(`*`)) {
           // 取消斜体
@@ -129,17 +126,16 @@ export const keymapActions: KeyBinding[] = [
             newText: text.slice(1, -1),
             from,
             to: to - 2,
-          }
-        }
-        else {
+          };
+        } else {
           return {
             newText: `*${text}*`,
             from,
             to: to + 2,
-          }
+          };
         }
-      })
-      return false
+      });
+      return false;
     },
   },
   {
@@ -150,9 +146,9 @@ export const keymapActions: KeyBinding[] = [
           newText: `~${text}~`,
           from,
           to: to + 2,
-        }
-      })
-      return false
+        };
+      });
+      return false;
     },
   },
   {
@@ -163,9 +159,9 @@ export const keymapActions: KeyBinding[] = [
           newText: `[${text}]()`,
           from,
           to: to + 4,
-        }
-      })
-      return false
+        };
+      });
+      return false;
     },
   },
   {
@@ -176,12 +172,12 @@ export const keymapActions: KeyBinding[] = [
           newText: `\`${text}\``,
           from,
           to: to + 2,
-        }
-      })
-      return false
+        };
+      });
+      return false;
     },
   },
-]
+];
 
 const myBasicSetup = [
   EditorView.lineWrapping,
@@ -203,30 +199,30 @@ const myBasicSetup = [
     ...historyKeymap,
     ...keymapActions,
   ]),
-]
+];
 
 export function initCodemirrorEditor(
   dom: Element,
-  options: { extensions?: Extension[], initContent?: string },
+  options: { extensions?: Extension[]; initContent?: string }
 ): MyEditorView {
   const initState = EditorState.create({
     doc: options.initContent,
     extensions: options.extensions || [],
-  })
+  });
 
   const editor = new MyEditorView({
     parent: dom,
     state: initState,
-  })
-  editor.focus()
+  });
+  editor.focus();
 
-  return editor
+  return editor;
 }
 
 export function initEditorExtensions(
   updateListener: (update: ViewUpdate) => void,
   pasteHandler: (event: ClipboardEvent, view: EditorView) => boolean | void,
-  scrollHandler: (event: Event, view: EditorView) => boolean | void,
+  scrollHandler: (event: Event, view: EditorView) => boolean | void
 ) {
   const myTheme = EditorView.baseTheme({
     '&': {
@@ -239,7 +235,7 @@ export function initEditorExtensions(
       color: `gray`,
     },
     '.cm-content': {
-      'caretColor': `red`,
+      caretColor: `red`,
       'font-size': `14px`,
     },
     '&.cm-focused': {
@@ -252,24 +248,24 @@ export function initEditorExtensions(
       backgroundColor: `#045`,
       color: `#ddd`,
     },
-  })
+  });
   return [
     // placeholder(`输入 / 唤起ai辅助写作功能`),
-    // InlineSuggestion(),
+    InlineSuggestion(),
     markdown().extension,
     ...myBasicSetup,
     myTheme,
-    EditorView.updateListener.of(update => updateListener(update)),
+    EditorView.updateListener.of((update) => updateListener(update)),
     EditorView.domEventHandlers({
       paste: (event, view) => pasteHandler(event, view),
       scroll: (event, view) => scrollHandler(event, view),
     }),
-  ]
+  ];
 }
 
 export function initCssEditor(
   dom: Element,
-  options: { extensions?: Extension[], initContent?: string },
+  options: { extensions?: Extension[]; initContent?: string }
 ): MyEditorView {
   const editor = new MyEditorView({
     parent: dom,
@@ -277,16 +273,16 @@ export function initCssEditor(
       doc: options.initContent,
       extensions: options.extensions,
     }),
-  })
-  return editor
+  });
+  return editor;
 }
 
-const cssThemeCompartment = new Compartment()
+const cssThemeCompartment = new Compartment();
 
-export { cssThemeCompartment }
+export { cssThemeCompartment };
 
 export function initCssEditorExtensions(
-  updateListener: (update: ViewUpdate) => void,
+  updateListener: (update: ViewUpdate) => void
 ) {
   const myTheme = EditorView.baseTheme({
     '&': {
@@ -298,8 +294,9 @@ export function initCssEditorExtensions(
     '&.cm-focused': {
       outline: `none`,
     },
-  })
+  });
   return [
+    cssExtension().extension,
     ...myBasicSetup,
     myTheme,
     keymap.of([
@@ -310,10 +307,10 @@ export function initCssEditorExtensions(
             editor.dispatch(
               editor.state.update({
                 changes: { from: 0, to: doc.length, insert: doc },
-              }),
-            )
-          })
-          return true
+              })
+            );
+          });
+          return true;
         },
       },
     ]),
@@ -326,7 +323,7 @@ export function initCssEditorExtensions(
       //   return false; // 返回 false 表示不阻止默认行为
       // },
     }),
-    EditorView.updateListener.of(update => updateListener(update)),
+    EditorView.updateListener.of((update) => updateListener(update)),
     cssThemeCompartment.of(ayuLight),
-  ]
+  ];
 }
