@@ -1,9 +1,10 @@
 import type { ExtendedProperties, IOpts, ThemeStyles } from '@/types';
 import type { PropertiesHyphen } from 'csstype';
-import type { Renderer, RendererObject, Tokens } from 'marked';
+import type { MarkedOptions, Renderer, RendererObject, Tokens } from 'marked';
+import type { MarkOptions } from 'node:perf_hooks';
 import { toMerged } from 'es-toolkit';
-import hljs from 'highlight.js';
 
+import hljs from 'highlight.js';
 import { marked } from 'marked';
 import mermaid from 'mermaid';
 import { MDKatex } from './MDKatex';
@@ -82,7 +83,7 @@ function buildFootnoteArray(footnotes: [number, string, string][]): string {
         link === title
           ? `<code style="opacity: 0.6;font-size: 1em;">[${index}]</code>: <i style="word-break: break-all;font-size: 1em;">${title}</i>`
           : `<code style="opacity: 0.6;font-size: 1em;">[${index}]</code> ${title}: <i style="word-break: break-all;font-size: 1em;">${link}</i>`;
-      return `<div style="font-size: 1em;">${ele}</div>`;
+      return `<p style="font-size: 0.8em;margin: 0;padding: 0;">${ele}</p>`;
     })
     .join(`\n`);
 }
@@ -120,11 +121,6 @@ export function initRenderer(opts: IOpts) {
   let listIndex: number = 0;
   let isOrdered: boolean = false;
 
-  function styles(tag: string, _: string = ``): string {
-    return ``;
-    // return getStyles(styleMapping, tag, addition)
-  }
-
   function styledContent(
     styleLabel: string,
     content: string,
@@ -156,8 +152,10 @@ export function initRenderer(opts: IOpts) {
     }
 
     return (
-      styledContent(`h4`, `引用链接`) +
-      styledContent(`footnotes`, buildFootnoteArray(footnotes), `p`)
+      styledContent(
+        `h4`,
+        `<span class="prefix"></span><span class="content">引用链接</span><span class="suffix"></span>`
+      ) + styledContent(`footnotes`, buildFootnoteArray(footnotes), `p`)
     );
   };
 
@@ -168,19 +166,6 @@ export function initRenderer(opts: IOpts) {
     },
     html(token: Tokens.HTML | Tokens.Tag) {
       const text = token.text;
-
-      // const div = document.createElement(`div`);
-      // div.innerHTML = text;
-      // // 遍历解析div中所有元素，然后添加属性style
-      // div.querySelectorAll(`*`).forEach((el) => {
-      //   const tag = el.tagName.toLowerCase().trim();
-      //   if (tag) {
-      //     const oldStyle = el.getAttribute(`style`);
-      //     const style = getStyles(styleMapping, tag, ``, false);
-      //     // 不要覆盖旧的style
-      //     el.setAttribute(`style`, oldStyle ? `${style};${oldStyle}` : style);
-      //   }
-      // });
       return text;
     },
     checkbox({ checked }: Tokens.Checkbox) {
@@ -203,11 +188,11 @@ export function initRenderer(opts: IOpts) {
         : token.text;
     },
 
-    // ⬆️
     heading({ tokens, depth }: Tokens.Heading) {
       const text = this.parser.parseInline(tokens);
       const tag = `h${depth}`;
-      return styledContent(tag, text);
+      return `<${tag} ><span class="prefix"></span><span class="content">${text}</span><span class="suffix"></span></${tag}>`;
+      // return styledContent(tag, text);
     },
 
     paragraph({ tokens }: Tokens.Paragraph): string {
@@ -222,7 +207,7 @@ export function initRenderer(opts: IOpts) {
 
     blockquote({ tokens }: Tokens.Blockquote): string {
       let text = this.parser.parse(tokens);
-      text = text.replace(/<p .*?>/g, `<p ${styles(`blockquote_p`)}>`);
+      text = text.replace(/<p .*?>/g, `<p class="blockquote_p">`);
       return styledContent(`blockquote`, text);
     },
 
@@ -242,8 +227,8 @@ export function initRenderer(opts: IOpts) {
         .replace(/\n/g, `<br/>`)
         .replace(/(>[^<]+)|(^[^<]+)/g, (str) => str.replace(/\s/g, `&nbsp;`));
       const span = `<span class="mac-sign" style="padding: 10px 14px 0;" hidden>${macCodeSvg}</span>`;
-      const code = `<code class="language-${lang}" ${styles(`code`)}>${highlighted}</code>`;
-      return `<pre class="hljs code__pre" ${styles(`code_pre`)}>${span}${code}</pre>`;
+      const code = `<code class="language-${lang}">${highlighted}</code>`;
+      return `<pre class="hljs code__pre code_pre">${span}${code}</pre>`;
     },
 
     codespan({ text }: Tokens.Codespan): string {
@@ -280,13 +265,10 @@ export function initRenderer(opts: IOpts) {
           `figcaption`,
           transform(opts.legend!, text, title)
         );
-        const figureStyles = styles(`figure`);
-        const imgStyles = styles(`image`);
-        return `<figure ${figureStyles}><img ${imgStyles} src="${href}" title="${title}" alt="${text}"/>${subText}</figure>`;
+        return `<figure><img src="${href}" title="${title}" alt="${text}"/>${subText}</figure>`;
       } else {
         // 如果不存在标题，生成不带标题的图像 HTML 代码
-        let out = `<img src="${href}" alt="${text}"`;
-        out += `>`;
+        const out = `<img src="${href}" alt="${text}"/>`;
         return out;
       }
     },
@@ -296,21 +278,20 @@ export function initRenderer(opts: IOpts) {
       const text = this.parser.parseInline(tokens);
 
       if (href.startsWith(`https://mp.weixin.qq.com`)) {
-        return `<a href="${href}" title="${title || text}" ${styles(`wx_link`)}>${text}</a>`;
+        return `<a href="${href}" title="${title || text}" class="wx_link">${text}</a>`;
       }
       const isFigureImage = text.includes(`<figure`) || text.includes(`<img`);
       if (isFigureImage) {
-        return `<a href="${href}" title="${title}">${text}</a>`;
+        return `<a href="${href}" title="${title}" class="link">${text}</a>`;
       }
       if (href === text) {
         return text;
       }
       if (opts.status) {
         const ref = addFootnote(title || text, href);
-        return `<span ${styles(`link`)}>${text}<sup>[${ref}]</sup></span>`;
+        return `<a href="#" title="${title}" class="link">${text}<sup>[${ref}]</sup></a>`;
       }
-      // return `<a href="${href}" title="${title || text}">${text}</a>`;
-      return styledContent(`link`, text, `span`);
+      return `<a href="${href}" title="${title || text}" class="link">${text}</a>`;
     },
 
     strong({ tokens }: Tokens.Strong): string {
@@ -330,9 +311,9 @@ export function initRenderer(opts: IOpts) {
         })
         .join(``);
       return `
-        <section style="padding:0 8px; max-width: 100%; overflow: auto">
+        <section class="table-container" style="padding:0 8px; max-width: 100%; overflow: auto">
           <table class="preview-table">
-            <thead ${styles(`thead`)}>${headerRow}</thead>
+            <thead>${headerRow}</thead>
             <tbody>${body}</tbody>
           </table>
         </section>

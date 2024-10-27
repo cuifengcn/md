@@ -1,4 +1,4 @@
-import type { IConfigOption } from '@/types'
+import type { IConfigOption } from '@/types';
 
 export const fontFamilyOptions: IConfigOption[] = [
   {
@@ -16,7 +16,7 @@ export const fontFamilyOptions: IConfigOption[] = [
     value: `Menlo, Monaco, 'Courier New', '黑体', monospace`,
     desc: `字体123Abc`,
   },
-]
+];
 
 export const fontSizeOptions: IConfigOption[] = [
   {
@@ -44,7 +44,7 @@ export const fontSizeOptions: IConfigOption[] = [
     value: `16px`,
     desc: `更大`,
   },
-]
+];
 
 export const colorOptions: IConfigOption[] = [
   {
@@ -66,6 +66,16 @@ export const colorOptions: IConfigOption[] = [
     label: `柠檬黄`,
     value: `#FECE00`,
     desc: `明亮温暖`,
+  },
+  {
+    label: `柿子橙`,
+    value: `#e7642b`,
+    desc: `优雅明亮`,
+  },
+  {
+    label: `珊瑚红`,
+    value: `#ef7060`,
+    desc: `积极愉悦`,
   },
   {
     label: `薰衣紫`,
@@ -102,9 +112,9 @@ export const colorOptions: IConfigOption[] = [
     value: `#FFB7C5`,
     desc: `浪漫甜美`,
   },
-]
+];
 
-const codeBlockUrlPrefix = `https://cdn.bootcdn.net/ajax/libs/highlight.js/11.10.0/styles/`
+const codeBlockUrlPrefix = `https://cdn.bootcdn.net/ajax/libs/highlight.js/11.10.0/styles/`;
 const codeBlockThemeList = [
   `1c-light.min.css`,
   `a11y-dark.min.css`,
@@ -179,17 +189,19 @@ const codeBlockThemeList = [
   `vs2015.min.css`,
   `xcode.min.css`,
   `xt256.min.css`,
-].sort()
+].sort();
 
-export const codeBlockThemeOptions: IConfigOption[] = codeBlockThemeList.map((codeBlockTheme) => {
-  const label = codeBlockTheme.replace(`.min.css`, ``)
-  const value = `${codeBlockUrlPrefix}${codeBlockTheme}`
-  return {
-    label,
-    value,
-    desc: ``,
+export const codeBlockThemeOptions: IConfigOption[] = codeBlockThemeList.map(
+  (codeBlockTheme) => {
+    const label = codeBlockTheme.replace(`.min.css`, ``);
+    const value = `${codeBlockUrlPrefix}${codeBlockTheme}`;
+    return {
+      label,
+      value,
+      desc: ``,
+    };
   }
-})
+);
 
 export const legendOptions = [
   {
@@ -217,4 +229,4 @@ export const legendOptions = [
     value: `none`,
     desc: ``,
   },
-]
+];

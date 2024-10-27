@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import type { ChatCompletionStream } from 'openai/lib/ChatCompletionStream'
-import ai from '@/ai'
-import {
-  getPrompt,
-} from '@/ai/prompts'
-import { useAiModelStore, useStore } from '@/stores'
-import { AiGenerateType } from '@/types'
-import { ElMessage } from 'element-plus'
-import { debounce } from 'es-toolkit'
-import { storeToRefs } from 'pinia'
-import { ref, toRaw, watch } from 'vue'
+import type { ChatCompletionStream } from 'openai/lib/ChatCompletionStream';
+import ai from '@/ai';
+import { getPrompt } from '@/ai/prompts';
+import { useAiModelStore, useStore } from '@/stores';
+import { AiGenerateType } from '@/types';
+import { ElMessage } from 'element-plus';
+import { debounce } from 'es-toolkit';
+import { storeToRefs } from 'pinia';
+import { ref, toRaw, watch } from 'vue';
 
 const props = defineProps<{
-  generateType?: AiGenerateType
-  immediate?: boolean
-}>()
+  generateType?: AiGenerateType;
+  immediate?: boolean;
+}>();
 
 enum GenerateStatus {
   notStarted = `未开始`,
@@ -23,87 +21,95 @@ enum GenerateStatus {
   failed = `生成失败`,
 }
 
-const store = useStore()
-const aiModelStore = useAiModelStore()
-const { isShowPromptDialog } = storeToRefs(aiModelStore)
+const store = useStore();
+const aiModelStore = useAiModelStore();
+const { isShowPromptDialog } = storeToRefs(aiModelStore);
 
-const input = ref<string>(store.editor?.selectedContent || ``)
-const request = ref<string>(``)
+const input = ref<string>(store.editor?.selectedContent || ``);
+const request = ref<string>(``);
+const closeOnClickModal = ref(true);
 const generateType = ref<AiGenerateType>(
-  props.generateType || AiGenerateType.rewrite,
-)
-const generaterStatus = ref<GenerateStatus>(GenerateStatus.notStarted)
-const output = ref(``)
+  props.generateType || AiGenerateType.rewrite
+);
+const generaterStatus = ref<GenerateStatus>(GenerateStatus.notStarted);
+const output = ref(``);
 const requestSuggestions = [
   `以爆款公众号文章的风格`,
   `以幽默风趣的风格`,
   `以通俗易懂的风格`,
-]
-const stream = ref<ChatCompletionStream>()
+];
+const stream = ref<ChatCompletionStream>();
 
 watch(
   () => props.generateType,
   (val) => {
-    generateType.value = val || AiGenerateType.rewrite
-  },
-)
+    generateType.value = val || AiGenerateType.rewrite;
+  }
+);
 watch(isShowPromptDialog, (val) => {
   if (val) {
     // 打开此dialog时，自动触发
-    input.value = store.editor?.selectedContent || ``
-    request.value = ``
-    generateType.value = props.generateType || AiGenerateType.rewrite
-    generaterStatus.value = GenerateStatus.notStarted
-    output.value = ``
-    stream.value = undefined
+    if (store.editor?.selectedContent === input.value && input.value) {
+      // 当前选择内容跟之前选择内容一样，就不进行重置了
+      return;
+    }
+    input.value = store.editor?.selectedContent || ``;
+    request.value = ``;
+    generateType.value = props.generateType || AiGenerateType.rewrite;
+    generaterStatus.value = GenerateStatus.notStarted;
+    output.value = ``;
+    stream.value = undefined;
     if (props.immediate) {
-      onClick()
+      onClick();
     }
   }
-})
+});
 
 function handleSelectSuggestion(e: string) {
-  request.value = e
+  request.value = e;
 }
 
 function onClick() {
   if (generateType.value !== AiGenerateType.fullArticle && !input.value) {
     ElMessage.warning(`请输入要优化的内容`);
-    (document.querySelector(`.input-area textarea`) as HTMLElement)?.focus()
-    return
+    (document.querySelector(`.input-area textarea`) as HTMLElement)?.focus();
+    return;
   }
   const onStart = () => {
-    generaterStatus.value = GenerateStatus.generating
-    output.value = ``
-  }
+    generaterStatus.value = GenerateStatus.generating;
+    closeOnClickModal.value = false;
+    output.value = ``;
+  };
   const onGenerating = (text: string) => {
-    output.value += text
+    output.value += text;
     // 自动滚动到最底部
     debounce(() => {
       const area = document.querySelector(
-        `.output-area .el-textarea__inner`,
-      ) as HTMLElement
+        `.output-area .el-textarea__inner`
+      ) as HTMLElement;
       if (area) {
-        area.scrollTop = area.scrollHeight
+        area.scrollTop = area.scrollHeight;
       }
-    }, 100)()
-  }
+    }, 100)();
+  };
   const onEnd = () => {
-    generaterStatus.value = GenerateStatus.finished
-    stream.value = undefined
-  }
+    generaterStatus.value = GenerateStatus.finished;
+    closeOnClickModal.value = true;
+    stream.value = undefined;
+  };
   const onError = (error: unknown) => {
-    generaterStatus.value = GenerateStatus.failed
-    stream.value = undefined
-    console.error(error)
-  }
+    generaterStatus.value = GenerateStatus.failed;
+    closeOnClickModal.value = true;
+    stream.value = undefined;
+    console.error(error);
+  };
   const prompt = getPrompt(
     generateType.value,
     generateType.value === AiGenerateType.fullArticle
       ? toRaw(store.editor)!.content
       : input.value!,
-    request.value,
-  )
+    request.value
+  );
 
   ai.openaiAsk(
     [
@@ -117,43 +123,52 @@ function onClick() {
       onGenerating,
       onEnd,
       onError,
-    },
-  )
+    }
+  );
 }
 
 function continueGenerate() {
   const onStart = () => {
-    generaterStatus.value = GenerateStatus.generating
-    output.value += `\n`
-  }
+    generaterStatus.value = GenerateStatus.generating;
+    closeOnClickModal.value = false;
+    console.log(false);
+
+    output.value += `\n`;
+  };
   const onGenerating = (text: string) => {
-    output.value += text
+    output.value += text;
     // 自动滚动到最底部
     debounce(() => {
       const area = document.querySelector(
-        `.output-area .el-textarea__inner`,
-      ) as HTMLElement
+        `.output-area .el-textarea__inner`
+      ) as HTMLElement;
       if (area) {
-        area.scrollTop = area.scrollHeight
+        area.scrollTop = area.scrollHeight;
       }
-    }, 100)()
-  }
+    }, 100)();
+  };
   const onEnd = () => {
-    generaterStatus.value = GenerateStatus.finished
-    stream.value = undefined
-  }
+    generaterStatus.value = GenerateStatus.finished;
+    closeOnClickModal.value = true;
+    console.log(true);
+
+    stream.value = undefined;
+  };
   const onError = (error: unknown) => {
-    generaterStatus.value = GenerateStatus.failed
-    stream.value = undefined
-    console.error(error)
-  }
+    generaterStatus.value = GenerateStatus.failed;
+    closeOnClickModal.value = true;
+    console.log(true);
+
+    stream.value = undefined;
+    console.error(error);
+  };
   const prompt = getPrompt(
     generateType.value,
     (generateType.value === AiGenerateType.fullArticle
       ? toRaw(store.editor)?.content
       : input.value) ?? ``,
-    request.value,
-  )
+    request.value
+  );
 
   ai.openaiAsk(
     [
@@ -175,15 +190,15 @@ function continueGenerate() {
       onGenerating,
       onEnd,
       onError,
-    },
-  )
+    }
+  );
 }
 
 function onAdopt() {
-  beforeClose()
+  beforeClose();
   if (generateType.value === AiGenerateType.fullArticle) {
     if (store.editor) {
-      const editor = toRaw(store.editor)
+      const editor = toRaw(store.editor);
       editor.dispatch(
         editor.state.update({
           changes: [
@@ -193,23 +208,22 @@ function onAdopt() {
               insert: output.value,
             },
           ],
-        }),
-      )
+        })
+      );
     }
-  }
-  else {
+  } else {
     toRaw(store.editor)?.replaceSelection((_, __, ___) => {
       return {
         newText: output.value,
-      }
-    }, true)
+      };
+    }, true);
   }
 }
 
 function beforeClose() {
-  aiModelStore.toggleShowPromptDialog(false)
-  stream.value?.abort()
-  stream.value = undefined
+  aiModelStore.toggleShowPromptDialog(false);
+  stream.value?.abort();
+  stream.value = undefined;
 }
 </script>
 
@@ -219,8 +233,9 @@ function beforeClose() {
     v-model="isShowPromptDialog"
     title="AI生成"
     destroy-on-close
-    :close-on-click-modal="false"
-    :before-close="beforeClose">
+    :close-on-click-modal="closeOnClickModal"
+    :before-close="beforeClose"
+  >
     <el-row>
       <el-input
         v-if="generateType !== AiGenerateType.fullArticle"
@@ -229,14 +244,16 @@ function beforeClose() {
         autofocus
         placeholder="选择或输入您想优化的内容"
         class="input-area"
-        :autosize="{ minRows: 2, maxRows: 6 }" />
+        :autosize="{ minRows: 2, maxRows: 6 }"
+      />
     </el-row>
     <el-row>
       <el-autocomplete
         v-model="request"
         :fetch-suggestions="requestSuggestions"
         placeholder="要求"
-        @select="handleSelectSuggestion">
+        @select="handleSelectSuggestion"
+      >
         <template #default="{ item }">
           <div class="value">
             {{ item }}
@@ -248,18 +265,22 @@ function beforeClose() {
       <el-radio-group v-model="generateType">
         <el-radio-button
           :label="AiGenerateType.rewrite"
-          :value="AiGenerateType.rewrite" />
+          :value="AiGenerateType.rewrite"
+        />
         <el-radio-button
           :label="AiGenerateType.expand"
-          :value="AiGenerateType.expand" />
+          :value="AiGenerateType.expand"
+        />
         <el-radio-button
           :label="AiGenerateType.fullArticle"
-          :value="AiGenerateType.fullArticle" />
+          :value="AiGenerateType.fullArticle"
+        />
       </el-radio-group>
       <el-button
         type="primary"
         :loading="generaterStatus === GenerateStatus.generating"
-        @click="onClick">
+        @click="onClick"
+      >
         生成
       </el-button>
     </el-row>
@@ -272,21 +293,19 @@ function beforeClose() {
           autofocus
           placeholder="生成结果"
           :autosize="{ minRows: 2, maxRows: 10 }"
-          :input-style="{}" />
+          :input-style="{}"
+        />
       </el-row>
       <el-row
         v-if="generaterStatus === GenerateStatus.finished"
         justify="end"
-        class="gap-2">
+        class="gap-2"
+      >
         <el-button @click="() => aiModelStore.toggleShowPromptDialog(false)">
           取消
         </el-button>
-        <el-button v-if="output" @click="continueGenerate">
-          继续
-        </el-button>
-        <el-button type="primary" @click="onAdopt">
-          采纳
-        </el-button>
+        <el-button v-if="output" @click="continueGenerate"> 继续 </el-button>
+        <el-button type="primary" @click="onAdopt"> 采纳 </el-button>
       </el-row>
     </el-col>
   </el-dialog>

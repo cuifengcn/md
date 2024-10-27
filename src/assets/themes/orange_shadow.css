@@ -1,0 +1,287 @@
+* {
+  --md-primary-color: rgba(239, 112, 96, 1);
+  line-height: 1.5;
+  font-family:
+    Optima,
+    Microsoft YaHei,
+    PingFangSC-regular,
+    serif;
+}
+#output {
+  line-break: anywhere;
+}
+h1 {
+  /**一级标题*/
+  display: block;
+  margin: 30px auto 15px;
+  padding: 0;
+}
+h1 .content {
+  /**一级标题内容部分*/
+  display: inline-block;
+  font-size: 1.5em;
+  font-weight: bold;
+  text-align: left;
+}
+
+h2 {
+  /**二级标题*/
+  display: flex;
+  align-items: end;
+  margin: 30px 0px 15px 0px;
+  padding: 0;
+  border-bottom: 2px solid var(--md-primary-color);
+  line-height: 1.1em;
+}
+h2 .content {
+  /**二级标题内容部分*/
+  display: inline-block;
+  margin-right: 5px;
+  padding: 3px 10px 0px 10px;
+  color: #fff;
+  background: var(--md-primary-color);
+  font-size: 1.3em;
+  line-height: 1.3em;
+  font-weight: bold;
+  text-align: left;
+}
+h2::after {
+  border-bottom: 27px solid rgba(239, 235, 233, 1); /* 设置底部边框 */
+  border-right: 20px solid transparent; /* 设置右侧边框 */
+  content: ' '; /* 设置伪元素内容 */
+  display: inline-block;
+}
+.dark h2::after {
+  border-bottom: 27px solid rgb(93, 94, 95);
+}
+
+h3 {
+  /**三级标题*/
+  margin: 30px 0px 15px 0px;
+  padding: 0;
+}
+h3 .content {
+  /**三级标题内容部分*/
+  display: inline-block;
+  font-size: 1.2em;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+h4 {
+  /**四级标题*/
+  margin: 30px 0px 15px 0px;
+  padding: 0;
+}
+h4 .content {
+  /**四级标题内容部分*/
+  display: inline-block;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+p {
+  /**段落*/
+  margin: 0;
+  padding: 8px 0px 8px 0px;
+  color: var(--el-text-color-regular);
+  text-align: justify;
+}
+
+blockquote {
+  /**引用*/
+  border-left: 3px solid var(--md-primary-color);
+  color: rgba(0, 0, 0, 0.5);
+  background: #f7f7f7;
+  margin: 20px 0px 20px 0px;
+  padding: 10px 10px 10px 20px;
+}
+.dark blockquote {
+  /**暗黑模式下的引用*/
+  background: #080808;
+}
+
+.blockquote_p {
+  /**引用中的段落*/
+  display: block;
+  margin: 0;
+  font-size: 1em;
+}
+
+.code_pre {
+  /**代码快*/
+  font-size: 14px;
+  overflow-x: auto;
+  border-radius: 8px;
+  padding: 1em;
+  line-height: 1.5;
+  margin: 10px 0px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+code {
+  /**代码快中的代码*/
+  margin: 0;
+  white-space: nowrap;
+}
+code * {
+  /**代码快中的内容*/
+  font-family: Consolas, Monaco, Menlo, monospace;
+}
+
+img {
+  /**图片*/
+  display: block;
+  max-width: 100% !important;
+  margin: 0.1em auto 0.5em;
+  border-radius: 4px;
+}
+
+ol {
+  /**有序列表*/
+  padding-left: 1em;
+  margin-left: 0;
+  color: var(--el-text-color-regular);
+}
+
+ul {
+  /**无序列表*/
+  list-style: circle;
+  padding-left: 1em;
+  margin-left: 0;
+  color: var(--el-text-color-regular);
+}
+
+figure {
+  /**图*/
+  margin: 1.5em 8px;
+  color: var(--el-text-color-regular);
+}
+
+hr {
+  /**分割线*/
+  border-style: solid;
+  border-width: 1px 0 0;
+  border-color: rgba(0, 0, 0, 0.1);
+  -webkit-transform-origin: 0 0;
+  -webkit-transform: scale(1, 0.5);
+  transform-origin: 0 0;
+  transform: scale(1, 0.5);
+}
+
+listitem {
+  /**列表中的item*/
+  text-indent: -1em;
+  display: block;
+  margin: 0.2em 8px;
+  color: var(--el-text-color-regular);
+}
+
+codespan {
+  /**行内代码*/
+  font-size: 0.9em;
+  color: var(--md-primary-color);
+  background: transparent;
+  margin: 0px 2px 0px 2px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  /** word-break: break-all; */
+}
+
+em {
+  /**斜体*/
+  font-style: italic;
+  font-size: inherit;
+}
+
+.link {
+  /**链接*/
+  color: var(--md-primary-color);
+  border-bottom: 1px solid var(--md-primary-color);
+}
+
+.wx_link {
+  /**微信链接*/
+  color: var(--md-primary-color);
+  border-bottom: 1px solid var(--md-primary-color);
+}
+
+sup {
+  /**上标*/
+  font-size: 0.8em;
+}
+
+strong {
+  /**加粗*/
+  color: var(--md-primary-color);
+  font-weight: bold;
+  font-size: inherit;
+}
+
+.table-container {
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+}
+.table-container table {
+  display: table;
+  text-align: left;
+}
+.table-container thead td {
+  line-height: 1.5em;
+  text-align: left;
+  font-weight: bold;
+  background-color: #f0f0f0;
+  border: 1px solid rgba(204, 204, 204, 0.4);
+  padding: 5px 10px;
+}
+.dark .table-container thead td {
+  background-color: #0f0f0f;
+  border: 1px solid rgba(51, 51, 51, 0.6);
+}
+.table-container table thead tr td:nth-of-type(n) {
+  min-width: 85px;
+}
+.table-container tbody {
+  line-height: 1.5em;
+  text-align: left;
+  border: 0;
+}
+.table-container table tbody tr td:nth-of-type(n) {
+  min-width: 85px;
+}
+.table-container table tbody tr td {
+  padding: 5px 10px;
+}
+.table-container table tbody tr:nth-of-type(2n + 1) {
+  color: black;
+  background-color: white;
+}
+.dark .table-container table tbody tr:nth-of-type(2n + 1) {
+  color: white;
+  background-color: black;
+}
+.table-container table tbody tr:nth-child(odd) td {
+  border: 1px solid rgba(204, 204, 204, 0.4);
+}
+.dark .table-container table tbody tr:nth-child(odd) td {
+  border: 1px solid rgba(51, 51, 51, 0.4);
+}
+.table-container table tbody tr:nth-of-type(2n) {
+  background-color: #f8f8f8;
+}
+.dark .table-container table tbody tr:nth-of-type(2n) {
+  background-color: #070707;
+}
+.table-container tr:nth-of-type(2n) td {
+  border: 1px solid rgba(204, 204, 204, 0.4);
+}
+.dark .table-container tr:nth-of-type(2n) td {
+  border: 1px solid rgba(51, 51, 51, 0.4);
+}
+
+figcaption {
+  text-align: center;
+  color: #888;
+  font-size: 0.8em;
+}

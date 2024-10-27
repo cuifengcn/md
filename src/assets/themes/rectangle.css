@@ -1,26 +1,33 @@
 * {
-  --md-primary-color: rgba(48, 117, 153, 0.34);
+  --md-primary-color: #e7642b;
+  --code-color: #eb6161;
+  --strong-color: #424b5d;
   line-height: 1.5;
-  font-family:
-    Optima,
-    Microsoft YaHei,
-    PingFangSC-regular,
-    serif;
+  font-family: Optima, PingFangSC-regular, serif;
+  text-align: left;
 }
 #output {
-  margin: 0;
-  padding: 0 10px;
   line-break: anywhere;
+}
+.dark * {
+  --strong-color: #bdb4a2;
+}
+
+#output {
+  margin: 0;
+  padding: 0;
 }
 h1 {
   display: flex;
   margin: 2em 0px 1em 0px;
+  padding: 0;
 }
 h1 .content {
-  display: inline-block;
-  padding: 0;
-  font-size: 1.7em;
-  text-align: center;
+  display: block;
+  font-weight: bold;
+  font-size: 1.5em;
+  line-height: 1.5em;
+  color: var(--md-primary-color);
 }
 h1 .prefix {
   display: none;
@@ -31,40 +38,22 @@ h1 .suffix {
 
 h2 {
   margin: 30px auto 15px;
-  background: transparent -webkit-linear-gradient(
-      to left,
-      rgb(253, 213, 231),
-      rgb(194, 226, 249)
-    ) no-repeat;
-  background: transparent
-    linear-gradient(to left, rgb(253, 213, 231), rgb(194, 226, 249)) no-repeat;
-  border: 1px solid rgb(62, 62, 62);
-  border-radius: 0;
-  display: table;
+  display: block;
   padding: 0;
   position: relative;
   text-align: left;
 }
-.dark h2 {
-  background: transparent -webkit-linear-gradient(
-      to left,
-      rgb(2, 42, 24),
-      rgb(61, 29, 6)
-    ) no-repeat;
-  background: transparent
-    linear-gradient(to left, rgb(2, 42, 24), rgb(61, 29, 6)) no-repeat;
-}
 h2 .content {
   font-size: 1.28em;
-  padding: 10px;
+  color: rgba(255, 255, 255, 1);
+  line-height: 1.5em;
+  text-align: center;
+  padding: 3px 11px;
+  background-color: var(--md-primary-color);
   border: 1px solid;
-  border-radius: 0;
   display: block;
   font-weight: bold;
-  margin: 0;
-  text-align: left;
   position: relative;
-  transform: translate3d(-5px, -5px, 0px);
 }
 h2 .prefix {
   display: none;
@@ -74,67 +63,24 @@ h2 .suffix {
 }
 
 h3 {
-  margin: 30px 0px 15px 0px;
-  align-items: center;
-  background: transparent;
-  border: 1px;
-  border-radius: 0;
-  box-shadow: none;
+  margin: 30px 0 15px 0;
   display: flex;
-  flex-direction: column;
-  line-height: 1.5em;
-  padding: 0px;
-  position: relative;
-  text-align: left;
 }
 h3 .content {
-  font-size: 1.28em;
-  text-shadow: rgba(171, 224, 225, 1) 4px 3px 0px;
+  font-size: 1.2em;
   line-height: 1.5em;
   letter-spacing: 0em;
-  padding: 0;
-  background: transparent;
-  border: 1px;
+  font-weight: bold;
   display: block;
-  font-weight: bold;
-  margin: 0;
-  position: relative;
-  text-align: left;
-  text-indent: 0em;
-}
-.dark h3 .content {
-  text-shadow: rgba(89, 31, 30, 1) 4px 3px 0px;
-}
-h3 .prefix {
-  background: no-repeat 50% 50%
-    url(https://md-intelligence.oss-cn-beijing.aliyuncs.com/wavedhs78adghsa87.png);
-  background-size: contain;
-  width: 40px;
-  height: 20px;
-  border: 1px;
-  border-radius: 0;
-  display: inline-block;
-  font-size: 1.57em;
-  font-weight: bold;
-  letter-spacing: 0px;
-  line-height: 1.5em;
-  margin: 0px;
-  padding: 0px;
-  position: relative;
-  text-align: left;
-  text-indent: 0em;
-}
-h3 .suffix {
-  display: none;
 }
 
 h4 {
   margin: 30px 0px 15px 0px;
   padding: 0px;
-  display: block;
+  display: flex;
 }
 h4 .content {
-  font-size: 1.28em;
+  font-size: 1.1em;
   line-height: 1.5em;
   letter-spacing: 0em;
   text-align: left;
@@ -180,8 +126,8 @@ h6 .content {
 
 p {
   line-height: 1.8em;
-  letter-spacing: 0em;
-  text-align: center;
+  letter-spacing: 0.04em;
+  text-align: left;
   text-indent: 0em;
   margin: 0;
   padding: 8px 0px;
@@ -190,12 +136,12 @@ p {
 blockquote {
   margin: 20px 0px;
   padding: 10px 10px 10px 20px;
-  border-style: none none none solid;
-  border-width: 3px;
-  border-color: rgba(0, 0, 0, 0.4);
-  border-left-color: rgba(100, 169, 176, 1);
-  border-radius: 0px;
-  background-color: rgba(74, 174, 186, 0.05);
+  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.16);
+  display: block;
+  -webkit-overflow-scrolling: touch;
+}
+.dark blockquote {
+  box-shadow: 0px 0px 10px 0px rgba(255, 255, 255, 0.16);
 }
 .blockquote_p {
   line-height: 1.8em;
@@ -275,35 +221,41 @@ hr {
 }
 
 codespan {
-  color: rgba(30, 107, 184, 1);
+  color: var(--code-color);
   font-size: 1em;
   line-height: 1.8em;
   letter-spacing: 0em;
-  background-color: rgba(27, 31, 35, 0.05);
+  background-color: rgba(255, 255, 255, 0.05);
   margin: 0 2px;
   padding: 2px 4px;
   border-radius: 4px;
+  border: 1px none rgba(235, 97, 97, 0.4);
+  border-bottom-style: solid;
   word-break: break-all;
   font-family: Consolas, Monaco, Menlo, monospace;
 }
 
 em {
-  color: rgba(255, 79, 121, 1);
+  color: var(--strong-color);
   font-style: italic;
 }
 em strong {
-  color: rgba(255, 79, 121, 1);
+  color: var(--strong-color);
   font-weight: bold;
   font-style: italic;
   background-position: left top;
 }
 
 .link {
-  color: rgba(30, 107, 184, 1);
+  color: var(--code-color);
+  border: 1px none var(--code-color);
+  border-bottom-style: solid;
 }
 
 .wx_link {
-  color: rgba(30, 107, 184, 1);
+  color: var(--code-color);
+  border: 1px none var(--code-color);
+  border-bottom-style: solid;
   text-decoration: none;
 }
 
@@ -312,7 +264,7 @@ sup {
 }
 
 strong {
-  color: var(--md-primary-color);
+  color: var(--strong-color);
   font-weight: bold;
 }
 
@@ -336,7 +288,7 @@ strong {
 }
 .dark .table-container thead td {
   background-color: #0f0f0f;
-  border: 1px solid rgba(51, 51, 51, 0.4);
+  border: 1px solid rgba(51, 51, 51, 0.6);
 }
 .table-container table thead tr td:nth-of-type(n) {
   min-width: 85px;
@@ -381,7 +333,7 @@ strong {
 
 figcaption {
   text-align: center;
-  color: #888;
+  color: rgba(136, 136, 136, 1);
   font-size: 0.8em;
 }
 

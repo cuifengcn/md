@@ -43,8 +43,14 @@ import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue';
 const store = useStore();
 const displayStore = useDisplayStore();
 const aiModelStore = useAiModelStore();
-const { output, editor, editorExtensions, currentArticle, cssThemeContent } =
-  storeToRefs(store);
+const {
+  output,
+  editor,
+  editorExtensions,
+  currentArticle,
+  cssThemeContent,
+  isDark,
+} = storeToRefs(store);
 const { isShowCssEditor } = storeToRefs(displayStore);
 
 const {
@@ -491,7 +497,11 @@ function toAiRewrite() {
           <div id="output-wrapper" :class="{ output_night: !backLight }">
             <div class="preview border shadow-xl">
               <StyledProvider :content="cssThemeContent">
-                <section id="output" v-html="output" />
+                <section
+                  id="output"
+                  :class="{ dark: isDark }"
+                  v-html="output"
+                />
               </StyledProvider>
 
               <div v-if="isCoping" class="loading-mask">
