@@ -9,10 +9,11 @@ import {
   indentWithTab,
 } from '@codemirror/commands';
 import { css as cssExtension } from '@codemirror/lang-css';
-import { markdown } from '@codemirror/lang-markdown';
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import {
   bracketMatching,
   defaultHighlightStyle,
+  HighlightStyle,
   indentOnInput,
   syntaxHighlighting,
 } from '@codemirror/language';
@@ -27,6 +28,7 @@ import {
   highlightActiveLine,
   keymap,
 } from '@codemirror/view';
+import { styleTags, Tag, tags } from '@lezer/highlight';
 import { ayuLight } from 'thememirror';
 import { formatDoc } from '..';
 import MyEditorView from './editor';
@@ -35,6 +37,47 @@ import { InlineSuggestion } from './plugins/inlineSuggestion';
 export { EditorState } from '@codemirror/state';
 export { EditorView } from '@codemirror/view';
 
+export const highlightStyle = HighlightStyle.define([
+  {
+    tag: tags.heading,
+    color: `green`,
+  },
+  {
+    tag: tags.quote,
+    color: `#FC7741`,
+  },
+  {
+    tag: tags.monospace,
+    color: `#009E9D`,
+  },
+  { tag: tags.meta, color: `#404740` },
+  { tag: tags.link, textDecoration: `underline` },
+  { tag: tags.emphasis, fontStyle: `italic` },
+  { tag: tags.strong, fontWeight: `bold` },
+  { tag: tags.strikethrough, textDecoration: `line-through` },
+  { tag: tags.keyword, color: `#708` },
+  {
+    tag: [
+      tags.atom,
+      tags.bool,
+      tags.url,
+      tags.contentSeparator,
+      tags.labelName,
+    ],
+    color: `#BB51B8`,
+  },
+  { tag: [tags.literal, tags.inserted], color: `#164` },
+  { tag: [tags.string, tags.deleted], color: `#a11` },
+  { tag: [tags.regexp, tags.escape, tags.special(tags.string)], color: `#e40` },
+  { tag: tags.definition(tags.variableName), color: `#00f` },
+  { tag: tags.local(tags.variableName), color: `#30a` },
+  { tag: [tags.typeName, tags.namespace], color: `#085` },
+  { tag: tags.className, color: `#167` },
+  { tag: [tags.special(tags.variableName), tags.macroName], color: `#256` },
+  { tag: tags.definition(tags.propertyName), color: `#00c` },
+  { tag: tags.comment, color: `#940` },
+  { tag: tags.invalid, color: `#f00` },
+]);
 function replceSelection(
   view: EditorView,
   replacer: (
@@ -184,7 +227,7 @@ const myBasicSetup = [
   history(),
   dropCursor(),
   indentOnInput(),
-  syntaxHighlighting(defaultHighlightStyle),
+  // syntaxHighlighting(defaultHighlightStyle),
   bracketMatching(),
   closeBrackets(),
   autocompletion(),
@@ -252,7 +295,8 @@ export function initEditorExtensions(
   return [
     // placeholder(`输入 / 唤起ai辅助写作功能`),
     InlineSuggestion(),
-    markdown().extension,
+    markdown({ base: markdownLanguage }),
+    syntaxHighlighting(highlightStyle),
     ...myBasicSetup,
     myTheme,
     EditorView.updateListener.of((update) => updateListener(update)),

@@ -3,23 +3,22 @@ import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from '@/components/ui/hover-card'
+} from '@/components/ui/hover-card';
 import {
   codeBlockThemeOptions,
   colorOptions,
   fontFamilyOptions,
   fontSizeOptions,
   legendOptions,
-  themeOptions,
-} from '@/config'
+} from '@/config';
 
-import { useDisplayStore, useStore } from '@/stores'
-import { storeToRefs } from 'pinia'
-import { ref, toRaw } from 'vue'
-import StyleOptionMenu from './StyleOptionMenu.vue'
+import { useDisplayStore, useStore } from '@/stores';
+import { storeToRefs } from 'pinia';
+import { ref, toRaw } from 'vue';
+import StyleOptionMenu from './StyleOptionMenu.vue';
 
-const store = useStore()
-const { toggleShowCssEditor } = useDisplayStore()
+const store = useStore();
+const { toggleShowCssEditor } = useDisplayStore();
 
 const {
   defaultCssThemes,
@@ -31,7 +30,7 @@ const {
   legend,
   isMacCodeBlock,
   cssEditor,
-} = storeToRefs(store)
+} = storeToRefs(store);
 
 const {
   resetStyleConfirm,
@@ -42,20 +41,20 @@ const {
   codeBlockThemeChanged,
   legendChanged,
   macCodeBlockChanged,
-} = store
+} = store;
 
-const colorPicker = ref<HTMLElement & { show: () => void } | null>(null)
+const colorPicker = ref<(HTMLElement & { show: () => void }) | null>(null);
 
 function showPicker() {
-  colorPicker.value?.show()
+  colorPicker.value?.show();
 }
 
 // 自定义CSS样式
 function customStyle() {
-  toggleShowCssEditor()
+  toggleShowCssEditor();
   setTimeout(() => {
-    toRaw(cssEditor.value)!.dispatch()
-  }, 50)
+    toRaw(cssEditor.value)!.dispatch();
+  }, 50);
 }
 </script>
 
@@ -67,33 +66,39 @@ function customStyle() {
         title="主题"
         :options="defaultCssThemes"
         :current="theme"
-        :change="themeChanged" />
+        :change="themeChanged"
+      />
       <MenubarSeparator />
       <StyleOptionMenu
         title="字体"
         :options="fontFamilyOptions"
         :current="fontFamily"
-        :change="fontChanged" />
+        :change="fontChanged"
+      />
       <StyleOptionMenu
         title="字号"
         :options="fontSizeOptions"
         :current="fontSize"
-        :change="sizeChanged" />
+        :change="sizeChanged"
+      />
       <StyleOptionMenu
         title="主题色"
         :options="colorOptions"
         :current="primaryColor"
-        :change="colorChanged" />
+        :change="colorChanged"
+      />
       <StyleOptionMenu
         title="代码块主题"
         :options="codeBlockThemeOptions"
         :current="codeBlockTheme"
-        :change="codeBlockThemeChanged" />
+        :change="codeBlockThemeChanged"
+      />
       <StyleOptionMenu
         title="图注格式"
         :options="legendOptions"
         :current="legend"
-        :change="legendChanged" />
+        :change="legendChanged"
+      />
       <MenubarSeparator />
       <MenubarItem @click.self.prevent="showPicker">
         <HoverCard :open-delay="100">
@@ -110,7 +115,8 @@ function customStyle() {
               class="ml-auto"
               style="height: 2em"
               @change="colorChanged"
-              @click="showPicker" />
+              @click="showPicker"
+            />
           </HoverCardContent>
         </HoverCard>
         <!-- <el-icon class="mr-2 h-4 w-4" />

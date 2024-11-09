@@ -7,7 +7,21 @@ import { AiGenerateType } from '@/types';
 import { ElMessage } from 'element-plus';
 import { debounce } from 'es-toolkit';
 import { storeToRefs } from 'pinia';
-import { ref, toRaw, watch } from 'vue';
+import { nextTick, reactive, ref, toRaw, watch } from 'vue';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+} from '../ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+} from '../ui/select';
 
 const props = defineProps<{
   generateType?: AiGenerateType;
@@ -27,17 +41,11 @@ const { isShowPromptDialog } = storeToRefs(aiModelStore);
 
 const input = ref<string>(store.editor?.selectedContent || ``);
 const request = ref<string>(``);
-const closeOnClickModal = ref(true);
 const generateType = ref<AiGenerateType>(
   props.generateType || AiGenerateType.rewrite
 );
 const generaterStatus = ref<GenerateStatus>(GenerateStatus.notStarted);
 const output = ref(``);
-const requestSuggestions = [
-  `以爆款公众号文章的风格`,
-  `以幽默风趣的风格`,
-  `以通俗易懂的风格`,
-];
 const stream = ref<ChatCompletionStream>();
 
 watch(
@@ -49,35 +57,48 @@ watch(
 watch(isShowPromptDialog, (val) => {
   if (val) {
     // 打开此dialog时，自动触发
-    if (store.editor?.selectedContent === input.value && input.value) {
+    if (
+      store.editor?.selectedContent === input.value &&
+      input.value &&
+      !props.immediate
+    ) {
       // 当前选择内容跟之前选择内容一样，就不进行重置了
       return;
     }
     input.value = store.editor?.selectedContent || ``;
-    request.value = ``;
+    // request.value = ``;
     generateType.value = props.generateType || AiGenerateType.rewrite;
     generaterStatus.value = GenerateStatus.notStarted;
     output.value = ``;
     stream.value = undefined;
     if (props.immediate) {
-      onClick();
+      nextTick(() => onClick());
     }
   }
 });
 
+const requestSuggestions = [
+  `以爆款公众号文章的风格`,
+  `以幽默风趣的风格`,
+  `以通俗易懂的风格`,
+];
 function handleSelectSuggestion(e: string) {
   request.value = e;
 }
 
 function onClick() {
-  if (generateType.value !== AiGenerateType.fullArticle && !input.value) {
+  if (
+    ![AiGenerateType.fullArticle, AiGenerateType.generateArticle].includes(
+      generateType.value
+    ) &&
+    !input.value
+  ) {
     ElMessage.warning(`请输入要优化的内容`);
     (document.querySelector(`.input-area textarea`) as HTMLElement)?.focus();
     return;
   }
   const onStart = () => {
     generaterStatus.value = GenerateStatus.generating;
-    closeOnClickModal.value = false;
     output.value = ``;
   };
   const onGenerating = (text: string) => {
@@ -94,12 +115,10 @@ function onClick() {
   };
   const onEnd = () => {
     generaterStatus.value = GenerateStatus.finished;
-    closeOnClickModal.value = true;
     stream.value = undefined;
   };
   const onError = (error: unknown) => {
     generaterStatus.value = GenerateStatus.failed;
-    closeOnClickModal.value = true;
     stream.value = undefined;
     console.error(error);
   };
@@ -130,9 +149,6 @@ function onClick() {
 function continueGenerate() {
   const onStart = () => {
     generaterStatus.value = GenerateStatus.generating;
-    closeOnClickModal.value = false;
-    console.log(false);
-
     output.value += `\n`;
   };
   const onGenerating = (text: string) => {
@@ -149,15 +165,10 @@ function continueGenerate() {
   };
   const onEnd = () => {
     generaterStatus.value = GenerateStatus.finished;
-    closeOnClickModal.value = true;
-    console.log(true);
-
     stream.value = undefined;
   };
   const onError = (error: unknown) => {
     generaterStatus.value = GenerateStatus.failed;
-    closeOnClickModal.value = true;
-    console.log(true);
 
     stream.value = undefined;
     console.error(error);
@@ -196,7 +207,11 @@ function continueGenerate() {
 
 function onAdopt() {
   beforeClose();
-  if (generateType.value === AiGenerateType.fullArticle) {
+  if (
+    [AiGenerateType.fullArticle, AiGenerateType.generateArticle].includes(
+      generateType.value
+    )
+  ) {
     if (store.editor) {
       const editor = toRaw(store.editor);
       editor.dispatch(
@@ -225,94 +240,118 @@ function beforeClose() {
   stream.value?.abort();
   stream.value = undefined;
 }
+
+function onUpdate(val: boolean) {
+  if (!val) {
+    if (generaterStatus.value === GenerateStatus.generating) {
+      ElMessage.info(`请等待生成完成`);
+      return;
+    }
+    isShowPromptDialog.value = false;
+  }
+}
 </script>
 
 <template>
-  <div />
-  <el-dialog
-    v-model="isShowPromptDialog"
-    title="AI生成"
-    destroy-on-close
-    :close-on-click-modal="closeOnClickModal"
-    :before-close="beforeClose"
-  >
-    <el-row>
-      <el-input
-        v-if="generateType !== AiGenerateType.fullArticle"
-        v-model="input"
-        type="textarea"
-        autofocus
-        placeholder="选择或输入您想优化的内容"
-        class="input-area"
-        :autosize="{ minRows: 2, maxRows: 6 }"
-      />
-    </el-row>
-    <el-row>
-      <el-autocomplete
-        v-model="request"
-        :fetch-suggestions="requestSuggestions"
-        placeholder="要求"
-        @select="handleSelectSuggestion"
+  <Dialog :open="isShowPromptDialog" @update:open="onUpdate">
+    <DialogContent class="overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>AI生成</DialogTitle>
+      </DialogHeader>
+
+      <el-row
+        v-if="
+          ![
+            AiGenerateType.fullArticle,
+            AiGenerateType.generateArticle,
+          ].includes(generateType)
+        "
       >
-        <template #default="{ item }">
-          <div class="value">
-            {{ item }}
-          </div>
-        </template>
-      </el-autocomplete>
-    </el-row>
-    <el-row justify="space-between">
-      <el-radio-group v-model="generateType">
-        <el-radio-button
-          :label="AiGenerateType.rewrite"
-          :value="AiGenerateType.rewrite"
-        />
-        <el-radio-button
-          :label="AiGenerateType.expand"
-          :value="AiGenerateType.expand"
-        />
-        <el-radio-button
-          :label="AiGenerateType.fullArticle"
-          :value="AiGenerateType.fullArticle"
-        />
-      </el-radio-group>
-      <el-button
-        type="primary"
-        :loading="generaterStatus === GenerateStatus.generating"
-        @click="onClick"
-      >
-        生成
-      </el-button>
-    </el-row>
-    <el-col v-if="generaterStatus !== GenerateStatus.notStarted">
-      <el-row>
         <el-input
-          v-model="output"
-          class="output-area"
+          v-model="input"
           type="textarea"
           autofocus
-          placeholder="生成结果"
-          :autosize="{ minRows: 2, maxRows: 10 }"
-          :input-style="{}"
+          placeholder="选择或输入您想优化的内容"
+          class="input-area"
+          :autosize="{ minRows: 2, maxRows: 6 }"
+          input-style="background-color: rgba(128,128,128,0.1);"
         />
       </el-row>
-      <el-row
-        v-if="generaterStatus === GenerateStatus.finished"
-        justify="end"
-        class="gap-2"
-      >
+      <el-row>
+        <el-input
+          v-model="request"
+          type="textarea"
+          placeholder="要求"
+          class="input-area flex-1"
+          :autosize="{
+            minRows: 2,
+            maxRows: 10,
+          }"
+          input-style="background-color: rgba(128,128,128,0.1);"
+          autofocus
+        />
+        <Select @update:model-value="handleSelectSuggestion">
+          <SelectTrigger class="ml-2 h-8 w-8 px-1 py-1" />
+          <SelectContent>
+            <SelectItem
+              v-for="value in requestSuggestions"
+              :key="value"
+              :value="value"
+            >
+              {{ value }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </el-row>
+      <el-row justify="space-between">
+        <el-radio-group v-model="generateType">
+          <el-radio-button
+            :label="AiGenerateType.rewrite"
+            :value="AiGenerateType.rewrite"
+          />
+          <el-radio-button
+            :label="AiGenerateType.expand"
+            :value="AiGenerateType.expand"
+          />
+          <el-radio-button
+            :label="AiGenerateType.fullArticle"
+            :value="AiGenerateType.fullArticle"
+          />
+          <el-radio-button
+            :label="AiGenerateType.generateArticle"
+            :value="AiGenerateType.generateArticle"
+          />
+        </el-radio-group>
+        <el-button
+          type="primary"
+          :loading="generaterStatus === GenerateStatus.generating"
+          @click="onClick"
+        >
+          生成
+        </el-button>
+      </el-row>
+      <el-col v-if="generaterStatus !== GenerateStatus.notStarted">
+        <el-row class="mb-[1rem]">
+          <el-input
+            v-model="output"
+            class="output-area translate-z-0"
+            type="textarea"
+            autofocus
+            placeholder="生成结果"
+            :autosize="{ minRows: 2, maxRows: 15 }"
+            :input-style="{}"
+          />
+        </el-row>
+      </el-col>
+      <DialogFooter v-if="generaterStatus === GenerateStatus.finished">
         <el-button @click="() => aiModelStore.toggleShowPromptDialog(false)">
           取消
         </el-button>
         <el-button v-if="output" @click="continueGenerate"> 继续 </el-button>
         <el-button type="primary" @click="onAdopt"> 采纳 </el-button>
-      </el-row>
-    </el-col>
-  </el-dialog>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
-<style scoped lang="less">
-.el-row {
-  margin-bottom: 10px;
-}
-</style>
+<style scoped lang="less"></style>

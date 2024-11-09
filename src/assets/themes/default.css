@@ -2,9 +2,6 @@
   --md-primary-color: green;
   line-height: 1.75;
 }
-#output {
-  line-break: anywhere;
-}
 
 h1 {
   /**一级标题*/
@@ -17,7 +14,7 @@ h1 .content {
   display: inline-block;
   padding: 0 1em;
   color: var(--el-text-color-regular);
-  font-size: 1.2em;
+  font-size: 1.5em;
   font-weight: bold;
   text-align: center;
 }
@@ -73,7 +70,8 @@ p {
   text-align: justify;
 }
 
-blockquote {
+blockquote,
+.markdown-alert {
   /**引用*/
   font-style: normal;
   border-left: none;
@@ -83,12 +81,14 @@ blockquote {
   background: #f7f7f7;
   margin: 2em 8px;
 }
-.dark blockquote {
+.dark blockquote,
+.dark .markdown-alert {
   /**暗黑模式下的引用*/
   background: #080808;
 }
 
-.blockquote_p {
+.blockquote_p,
+.markdown-alert p {
   /**引用中的段落*/
   display: block;
   margin: 0;
@@ -96,7 +96,8 @@ blockquote {
   letter-spacing: 0.1em;
   color: rgb(80, 80, 80);
 }
-.dark .blockquote_p {
+.dark .blockquote_p,
+.dark .markdown-alert p {
   /**暗黑模式下引用中的段落*/
   color: rgb(175, 175, 175);
 }
@@ -129,7 +130,7 @@ code * {
 img {
   /**图片*/
   display: block;
-  max-width: 100% !important;
+  /* max-width: 100% !important; */
   margin: 0.1em auto 0.5em;
   border-radius: 4px;
 }
@@ -240,4 +241,19 @@ figcaption {
   text-align: center;
   color: #888;
   font-size: 0.8em;
+}
+
+footnotes p {
+  width: 100%;
+  font-size: 0.8em;
+  margin: 0;
+  padding: 0;
+}
+footnotes code {
+  opacity: 0.6;
+  font-size: 1em;
+}
+footnotes i {
+  word-break: break-all;
+  font-size: 1em;
 }

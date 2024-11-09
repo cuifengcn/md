@@ -4,19 +4,14 @@ import type { Extension } from '@codemirror/state';
 import type { ReadTimeResults } from 'reading-time';
 import DEFAULT_CONTENT from '@/assets/example/markdown.md?raw';
 import DEFAULT_CSS_CONTENT from '@/assets/example/theme-css.txt?raw';
-import DEFAULT_THEME from '@/assets/themes/default.css?raw';
-import GRACE_THEME from '@/assets/themes/grace.css?raw';
-import ORANGESHADOW_THEME from '@/assets/themes/orange_shadow.css?raw';
-import RECTANGLE_THEME from '@/assets/themes/rectangle.css?raw';
-import SHADOW_THEME from '@/assets/themes/shadow.css?raw';
+import OUTPUT_DEFAULT from '@/assets/outputDefault.css?raw';
 import {
+  defaultCssThemes as _defaultCssThemes,
   codeBlockThemeOptions,
   colorOptions,
   fontFamilyOptions,
   fontSizeOptions,
   legendOptions,
-  themeMap,
-  themeOptions,
 } from '@/config';
 import {
   addPrefix,
@@ -27,13 +22,14 @@ import {
   exportHTML,
   formatDoc,
   mergeCss,
+  sleep,
 } from '@/utils';
+
 import {
   cssThemeCompartment,
   initCssEditor,
   initCssEditorExtensions,
 } from '@/utils/codeMirrorUtil'; // 确保这个导入路径正确
-
 import { initRenderer } from '@/utils/renderer';
 import { EditorState } from '@codemirror/state';
 import { useDark, useStorage, useToggle } from '@vueuse/core';
@@ -180,33 +176,7 @@ export const useStore = defineStore(`store`, () => {
   const output = ref(``);
 
   // 主题相关
-  const defaultCssThemes = ref<IConfigOption[]>([
-    {
-      label: `默认主题`,
-      desc: `default`,
-      value: DEFAULT_THEME,
-    },
-    {
-      label: `优雅`,
-      desc: `grace`,
-      value: GRACE_THEME,
-    },
-    {
-      label: `重影`,
-      desc: `shadow`,
-      value: SHADOW_THEME,
-    },
-    {
-      label: `方框`,
-      desc: `rectangle`,
-      value: RECTANGLE_THEME,
-    },
-    {
-      label: `橘影`,
-      desc: `orangeShadow`,
-      value: ORANGESHADOW_THEME,
-    },
-  ]);
+  const defaultCssThemes = ref<IConfigOption[]>(_defaultCssThemes);
 
   // 当前主题
   const theme = useStorage<string>(
@@ -220,6 +190,8 @@ export const useStore = defineStore(`store`, () => {
   const fontSize = useStorage<string>(`size`, fontSizeOptions[2].value);
   // 主色
   const primaryColor = useStorage<string>(`color`, colorOptions[0].value);
+  // 背景
+  const background = useStorage<string>(`background`, null);
   // 代码块主题
   const codeBlockTheme = useStorage<string>(
     `codeBlockTheme`,
@@ -248,11 +220,15 @@ export const useStore = defineStore(`store`, () => {
 
     const content = mergeCss(`<html>
           <head>
+            <style>${OUTPUT_DEFAULT}</style>
             <style>${styles}</style>
             <style>${codeBlockCss}</style>
+            <style>${background.value}</style>
           </head>
           <body>
-            ${htmlContent}
+            <section class="output">
+              ${htmlContent}
+            </section>
           </body>
         </html>`);
     return content;
@@ -384,7 +360,7 @@ export const useStore = defineStore(`store`, () => {
     ) as string;
     const originTemp = outputTemp;
     // 去除第一行的 margin-top
-    outputTemp = outputTemp.replace(/(style=".*?)"/, `$1;margin-top: 0"`);
+    // outputTemp = outputTemp.replace(/(style=".*?)"/, `$1;margin-top: 0"`);
     // 引用脚注
     outputTemp += renderer.buildFootnotes();
     // 附加的一些 style
@@ -408,6 +384,11 @@ export const useStore = defineStore(`store`, () => {
             text-indent: 0;
           }
         </style>
+      `;
+    }
+    if (background) {
+      outputTemp += `
+        <style>${background.value}</style>
       `;
     }
 
@@ -475,47 +456,6 @@ export const useStore = defineStore(`store`, () => {
     watch(isDark, watchTheme);
   });
 
-  // 重置样式
-  const resetStyle = () => {
-    isCiteStatus.value = false;
-    isMacCodeBlock.value = true;
-
-    theme.value = themeOptions[0].value;
-    fontFamily.value = fontFamilyOptions[0].value;
-    fontFamily.value = fontFamilyOptions[0].value;
-    fontSize.value = fontSizeOptions[2].value;
-    primaryColor.value = colorOptions[0].value;
-    codeBlockTheme.value = codeBlockThemeOptions[2].value;
-    legend.value = legendOptions[3].value;
-
-    cssContentConfig.value = {
-      active: `方案 1`,
-      tabs: [
-        {
-          title: `方案 1`,
-          name: `方案 1`,
-          // 兼容之前的方案
-          content: cssContent.value || DEFAULT_CSS_CONTENT,
-        },
-      ],
-    };
-    if (cssEditor.value) {
-      const state = cssEditor.value.state;
-      toRaw(cssEditor.value).dispatch(
-        state.update({
-          changes: {
-            from: 0,
-            to: state.doc.length,
-            insert: DEFAULT_CSS_CONTENT,
-          },
-        })
-      );
-    }
-
-    updateCss();
-    editorRefresh();
-  };
-
   // 为函数添加刷新编辑器的功能
   const withAfterRefresh =
     (fn: (...rest: any[]) => void) =>
@@ -524,61 +464,28 @@ export const useStore = defineStore(`store`, () => {
       editorRefresh();
     };
 
-  // const getTheme = (size: string, color: string) => {
-  //   const newTheme = themeMap[theme.value];
-  //   const fontSize = size.replace(`px`, ``);
-  //   return customCssWithTemplate(
-  //     css2json(getCurrentTab().content),
-  //     color,
-  //     customizeTheme(newTheme, { fontSize, color })
-  //   );
-  // };
-
   const themeChanged = withAfterRefresh((newTheme: string) => {
     theme.value = newTheme;
     mergeCssTheme();
-    // renderer.setOptions({
-    //   theme: customCssWithTemplate(
-    //     css2json(getCurrentTab().content),
-    //     primaryColor.value,
-    //     customizeTheme(themeMap[newTheme], { fontSize: fontSizeNumber.value })
-    //   ),
-    // });
-    // theme.value = newTheme;
   });
 
   const fontChanged = withAfterRefresh((fonts) => {
     fontFamily.value = fonts;
     mergeCssTheme();
-    // renderer.setOptions({
-    //   fonts,
-    // });
-
-    // fontFamily.value = fonts;
   });
 
   const sizeChanged = withAfterRefresh((size) => {
     fontSize.value = size;
     mergeCssTheme();
-
-    // const theme = getTheme(size, primaryColor.value);
-    // renderer.setOptions({
-    //   size,
-    //   theme,
-    // });
-
-    // fontSize.value = size;
   });
 
   const colorChanged = withAfterRefresh((newColor) => {
     primaryColor.value = newColor;
     mergeCssTheme();
-    // const theme = getTheme(fontSize.value, newColor);
-    // renderer.setOptions({
-    //   theme,
-    // });
-
-    // primaryColor.value = newColor;
+  });
+  const backgroundChanged = withAfterRefresh((newBackground) => {
+    background.value = newBackground;
+    mergeCssTheme();
   });
 
   const codeBlockThemeChanged = withAfterRefresh((newTheme) => {
@@ -597,10 +504,77 @@ export const useStore = defineStore(`store`, () => {
     toggleCiteStatus();
   });
 
+  // 重置样式
+  const resetStyle = () => {
+    isCiteStatus.value = false;
+    isMacCodeBlock.value = true;
+
+    themeChanged(defaultCssThemes.value[0].value);
+    fontChanged(fontFamilyOptions[0].value);
+    sizeChanged(fontSizeOptions[2].value);
+    colorChanged(colorOptions[0].value);
+    backgroundChanged(``);
+    codeBlockThemeChanged(codeBlockThemeOptions[2].value);
+    legendChanged(legendOptions[3].value);
+
+    cssContentConfig.value = {
+      active: `方案 1`,
+      tabs: [
+        {
+          title: `方案 1`,
+          name: `方案 1`,
+          // 兼容之前的方案
+          content: cssContent.value || DEFAULT_CSS_CONTENT,
+        },
+      ],
+    };
+    if (cssEditor.value) {
+      const editor = toRaw(cssEditor.value);
+      editor.dispatch(
+        editor.state.update({
+          changes: {
+            from: 0,
+            to: editor.state.doc.length,
+            insert: DEFAULT_CSS_CONTENT,
+          },
+        })
+      );
+    }
+
+    updateCss();
+    editorRefresh();
+  };
+
   // 导出编辑器内容为 HTML，并且下载到本地
   const exportEditorContent2HTML = () => {
     exportHTML();
     document.querySelector(`#output`)!.innerHTML = output.value;
+  };
+
+  // 导出编辑器内容为 PDF， 并且下载到本地
+  const exportEditorContent2PDF = async () => {
+    const iframe = document.createElement(`iframe`);
+    iframe.id = `pdf-iframe`;
+    iframe.className = `pdf-iframe`;
+    iframe.setAttribute(`allowprinting`, `true`);
+
+    iframe.style.display = `none`;
+    iframe.style.width = `100%`;
+    iframe.style.height = `100%`;
+    document.body.appendChild(iframe);
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(await output2Html());
+      iframeDoc.close();
+      iframe.focus();
+      iframe.contentWindow?.print();
+    }
+
+    // 打印完成后移除 iframe
+    await sleep(100000);
+    document.body.removeChild(iframe);
   };
 
   // 导出编辑器内容到本地
@@ -652,12 +626,13 @@ export const useStore = defineStore(`store`, () => {
     })
       .then(() => {
         resetStyle();
-        ElMessage({
-          type: `success`,
+        ElMessage.success({
           message: `样式重置成功~`,
         });
       })
-      .catch(() => {
+      .catch((reason) => {
+        console.log(reason);
+
         toRaw(editor.value)!.focus();
       });
   };
@@ -692,6 +667,7 @@ export const useStore = defineStore(`store`, () => {
     fontFamily,
     fontSize,
     primaryColor,
+    background,
     codeBlockTheme,
     legend,
 
@@ -701,6 +677,7 @@ export const useStore = defineStore(`store`, () => {
     fontChanged,
     sizeChanged,
     colorChanged,
+    backgroundChanged,
     codeBlockThemeChanged,
     fetchCodeBlockThemeContent,
     legendChanged,
@@ -709,6 +686,7 @@ export const useStore = defineStore(`store`, () => {
     formatContent,
     exportEditorContent2HTML,
     exportEditorContent2MD,
+    exportEditorContent2PDF,
 
     importMarkdownContent,
 
@@ -742,6 +720,16 @@ export const useDisplayStore = defineStore(`display`, () => {
   // 是否展示文章提交对话框
   const isShowArticleSubmitDialog = ref(false);
 
+  // 是否显示主题设置对话框
+  const isShowThemeDialog = ref(false);
+  const toggleShowThemeDialog = useToggle(isShowThemeDialog);
+
+  // 是否显示为pc模式
+  const isPCMode = useStorage(`isPCMode`, false);
+  const togglePCMode = useToggle(isPCMode);
+
+  const isShowCrdDialog = ref(false);
+
   return {
     isShowCssEditor,
     toggleShowCssEditor,
@@ -751,6 +739,11 @@ export const useDisplayStore = defineStore(`display`, () => {
     toggleShowUploadImgDialog,
     isShowAddArticleDialog,
     isShowArticleSubmitDialog,
+    isShowThemeDialog,
+    toggleShowThemeDialog,
+    isPCMode,
+    togglePCMode,
+    isShowCrdDialog,
   };
 });
 

@@ -1,30 +1,20 @@
 <script setup lang="ts">
+import type { AiGenerateType } from '@/types';
 import type MyEditorView from '@/utils/codeMirrorUtil/editor';
 import type { ComponentPublicInstance } from 'vue';
-import PromptDialog from '@/components/ai/PromptDialog.vue';
+import AiDialog from '@/components/ai/AiDialog.vue';
+import ContextMenuVue from '@/components/CodemirrorEditor/ContextMenu/index.vue';
 import CssEditor from '@/components/CodemirrorEditor/CssEditor.vue';
 import EditorFooter from '@/components/CodemirrorEditor/EditorFooter/index.vue';
-import EditorHeader from '@/components/CodemirrorEditor/EditorHeader/index.vue';
 
+import EditorHeader from '@/components/CodemirrorEditor/EditorHeader/index.vue';
 import InsertFormDialog from '@/components/CodemirrorEditor/InsertFormDialog.vue';
 import UploadImgDialog from '@/components/CodemirrorEditor/UploadImgDialog.vue';
 import RunLoading from '@/components/RunLoading.vue';
 import SideToolBar from '@/components/SideToolBar/index.vue';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu';
 
-import { SelectionToolbar } from '@/components/ui/toolbar';
-import { altSign, shiftSign } from '@/config';
-import { useAiModelStore, useDisplayStore, useStore } from '@/stores';
-import { AiGenerateType } from '@/types';
+import { useDisplayStore, useStore } from '@/stores';
 import { checkImage, toBase64 } from '@/utils';
-
 import {
   initCodemirrorEditor,
   initEditorExtensions,
@@ -32,7 +22,6 @@ import {
 } from '@/utils/codeMirrorUtil';
 
 import fileApi from '@/utils/file';
-import { Icon } from '@iconify/vue';
 
 import styled from '@vue-styled-components/core';
 import { ElCol, ElMessage } from 'element-plus';
@@ -42,7 +31,7 @@ import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue';
 
 const store = useStore();
 const displayStore = useDisplayStore();
-const aiModelStore = useAiModelStore();
+
 const {
   output,
   editor,
@@ -51,18 +40,15 @@ const {
   cssThemeContent,
   isDark,
 } = storeToRefs(store);
-const { isShowCssEditor } = storeToRefs(displayStore);
+const { isShowCssEditor, isPCMode } = storeToRefs(displayStore);
 
 const {
   editorRefresh,
-  exportEditorContent2HTML,
-  exportEditorContent2MD,
+
   formatContent,
-  importMarkdownContent,
-  resetStyleConfirm,
 } = store;
 
-const { toggleShowInsertFormDialog, toggleShowUploadImgDialog } = displayStore;
+const { toggleShowUploadImgDialog } = displayStore;
 
 const isImgLoading = ref(false);
 
@@ -87,15 +73,17 @@ function listenPreviewScroll() {
     clearTimeout(scrollingTimeout.value);
     scrollingTarget.value = `preview`;
     const source = preview.value!.$el;
-    const target = document.querySelector<HTMLElement>(`.cm-scroller`)!;
+    const target = document.querySelector<HTMLElement>(`#editor .cm-scroller`)!;
+
     const percentage =
       source.scrollTop / (source.scrollHeight - source.offsetHeight);
+
     const height = percentage * (target.scrollHeight - target.offsetHeight);
 
     target.scrollTo(0, height);
     scrollingTimeout.value = setTimeout(() => {
       scrollingTarget.value = null;
-    }, 2);
+    }, 10);
   }
 
   preview.value!.$el.addEventListener(`scroll`, previewScrollCB, false);
@@ -240,7 +228,8 @@ function initEditor() {
       clearTimeout(scrollingTimeout.value);
       scrollingTarget.value = `editor`;
 
-      const source = document.querySelector<HTMLElement>(`.cm-scroller`)!;
+      const source =
+        document.querySelector<HTMLElement>(`#editor .cm-scroller`)!;
       const target = preview.value!.$el;
       const percentage =
         source.scrollTop / (source.scrollHeight - source.offsetHeight);
@@ -248,7 +237,7 @@ function initEditor() {
       target.scrollTo(0, height);
       scrollingTimeout.value = setTimeout(() => {
         scrollingTarget.value = null;
-      }, 2);
+      }, 10);
       return false;
     }
   );
@@ -399,18 +388,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   editor.value?.destroy();
 });
-
-function aiGenerate() {
-  aiModelStore.toggleShowPromptDialog(true);
-}
-function toAiRewrite() {
-  initGenerateType.value = AiGenerateType.rewrite;
-  aiModelStore.toggleShowPromptDialog(true);
-  // 延迟两秒
-  setTimeout(() => {
-    initGenerateType.value = undefined;
-  }, 2000);
-}
 </script>
 
 <template>
@@ -427,78 +404,36 @@ function toAiRewrite() {
           ref="codeMirrorWrapper"
           :span="isShowCssEditor ? 8 : 12"
           :lg="isShowCssEditor ? 8 : 14"
-          :xl="isShowCssEditor ? 8 : 16"
+          :xl="isShowCssEditor ? 8 : isPCMode ? 12 : 16"
           class="codeMirror-wrapper border-r-1"
           :class="{
             'order-1': !store.isEditOnLeft,
           }"
         >
-          <ContextMenu>
+          <!-- <ContextMenu>
             <ContextMenuTrigger>
               <div id="editor" />
             </ContextMenuTrigger>
-            <ContextMenuContent as-child>
-              <ElCol
-                class="border-none bg-transparent shadow-none outline-none"
-              >
-                <SelectionToolbar
-                  class="context-menu-toolbar z-50 mb-1 shadow-lg"
-                  @ai-rewrite="toAiRewrite"
-                />
-                <ElCol class="context-menu w-64 rounded shadow-lg">
-                  <ContextMenuItem inset @click="aiGenerate">
-                    <Icon
-                      icon="tabler:ai"
-                      :width="20"
-                      :height="20"
-                      class="mr-[4px] self-center rounded bg-green-500/50"
-                    />
-                    AI生成
-                  </ContextMenuItem>
-                  <ContextMenuItem inset @click="toggleShowUploadImgDialog">
-                    上传图片
-                  </ContextMenuItem>
-                  <ContextMenuItem inset @click="toggleShowInsertFormDialog()">
-                    插入表格
-                  </ContextMenuItem>
-                  <ContextMenuItem inset @click="resetStyleConfirm()">
-                    恢复默认样式
-                  </ContextMenuItem>
-                  <ContextMenuSeparator />
-
-                  <ContextMenuItem inset @click="importMarkdownContent()">
-                    导入 .md 文档
-                  </ContextMenuItem>
-                  <ContextMenuItem inset @click="exportEditorContent2MD()">
-                    导出 .md 文档
-                  </ContextMenuItem>
-                  <ContextMenuItem inset @click="exportEditorContent2HTML()">
-                    导出 .html
-                  </ContextMenuItem>
-                  <ContextMenuItem inset @click="formatContent()">
-                    格式化
-                    <ContextMenuShortcut>
-                      {{ altSign }} + {{ shiftSign }} + F
-                    </ContextMenuShortcut>
-                  </ContextMenuItem>
-                </ElCol>
-              </ElCol>
-            </ContextMenuContent>
-          </ContextMenu>
+          </ContextMenu> -->
+          <ContextMenuVue />
         </ElCol>
         <ElCol
           id="preview"
           ref="preview"
           :span="isShowCssEditor ? 8 : 12"
           :lg="isShowCssEditor ? 8 : 10"
-          :xl="isShowCssEditor ? 8 : 8"
+          :xl="isShowCssEditor ? 8 : isPCMode ? 12 : 8"
           class="preview-wrapper p-5"
         >
           <div id="output-wrapper" :class="{ output_night: !backLight }">
-            <div class="preview border shadow-xl">
+            <div
+              class="preview border shadow-xl"
+              :class="{ 'preview-pc': isPCMode }"
+            >
               <StyledProvider :content="cssThemeContent">
                 <section
                   id="output"
+                  class="output"
                   :class="{ dark: isDark }"
                   v-html="output"
                 />
@@ -510,6 +445,12 @@ function toAiRewrite() {
                   <span>正在生成</span>
                 </div>
               </div>
+              <ElBacktop
+                :right="2"
+                :bottom="25"
+                target="#preview"
+                style="box-shadow: none"
+              />
             </div>
           </div>
         </ElCol>
@@ -522,10 +463,14 @@ function toAiRewrite() {
     <UploadImgDialog @upload-image="uploadImage" />
 
     <InsertFormDialog />
-    <PromptDialog
+    <AiDialog
       :generate-type="initGenerateType"
       :immediate="!!initGenerateType"
     />
+    <!-- <PromptDialog
+      :generate-type="initGenerateType"
+      :immediate="!!initGenerateType"
+    /> -->
     <RunLoading />
   </div>
 </template>
@@ -558,6 +503,7 @@ function toAiRewrite() {
 #output-wrapper {
   position: relative;
   user-select: text;
+  width: 100%;
   height: 100%;
 }
 

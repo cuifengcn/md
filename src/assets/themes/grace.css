@@ -2,9 +2,7 @@
   --md-primary-color: green;
   line-height: 1.75;
 }
-#output {
-  line-break: anywhere;
-}
+
 h1 {
   display: table;
   margin: 2em auto 1em;
@@ -64,7 +62,9 @@ p {
   text-align: justify;
 }
 
-blockquote {
+blockquote,
+.block,
+.markdown-alert {
   font-style: italic;
   padding: 1em 1em 1em 2em;
   border-left: 4px solid var(--md-primary-color);
@@ -73,19 +73,42 @@ blockquote {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   margin: 1em 0px;
 }
-.dark blockquote {
+.dark blockquote,
+.dark .block,
+.dark .markdown-alert {
   background: linear-gradient(to right, #080808, #000000);
 }
+.block {
+  border: 2px solid var(--md-primary-color);
+}
 
-.blockquote_p {
+.blockquote_p,
+.block p,
+.markdown-alert p {
   display: block;
   margin: 0;
   font-size: 1em;
   letter-spacing: 0.1em;
   color: rgb(80, 80, 80);
 }
-.dark .blockquote_p {
+.dark .blockquote_p,
+.dark .markdown-alert p {
   color: rgba(175, 175, 175);
+}
+.markdown-alert-note {
+  border-left: 4px solid var(--markdown-alert-note-color);
+}
+.markdown-alert-tip {
+  border-left: 4px solid var(--markdown-alert-tip-color);
+}
+.markdown-alert-important {
+  border-left: 4px solid var(--markdown-alert-important-color);
+}
+.markdown-alert-warning {
+  border-left: 4px solid var(--markdown-alert-warning-color);
+}
+.markdown-alert-caution {
+  border-left: 4px solid var(--markdown-alert-caution-color);
 }
 
 .code_pre {
@@ -100,7 +123,7 @@ blockquote {
 
 code {
   margin: 0;
-  white-space: pre-wrap;
+  white-space: nowrap;
 }
 code * {
   font-family:
@@ -225,4 +248,19 @@ figcaption {
   text-align: center;
   color: #888;
   font-size: 0.8em;
+}
+
+footnotes p {
+  width: 100%;
+  font-size: 0.8em;
+  margin: 0;
+  padding: 0;
+}
+footnotes code {
+  opacity: 0.6;
+  font-size: 1em;
+}
+footnotes i {
+  word-break: break-all;
+  font-size: 1em;
 }

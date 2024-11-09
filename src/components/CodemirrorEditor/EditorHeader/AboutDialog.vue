@@ -22,7 +22,7 @@ function onUpdate(val: boolean) {
   }
 }
 
-const links = [{ label: `GitHub 仓库`, url: `https://github.com/doocs/md` }]
+const links = [{ label: `GitHub 仓库`, url: `https://github.com/cuifengcn/md` }]
 
 function onRedirect(url: string) {
   window.open(url, `_blank`)

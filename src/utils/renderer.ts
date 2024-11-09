@@ -7,9 +7,13 @@ import { toMerged } from 'es-toolkit';
 import hljs from 'highlight.js';
 import { marked } from 'marked';
 import mermaid from 'mermaid';
+import markedAlert from './markdownExtensions/alert';
+import { createDirectives } from './markdownExtensions/directive';
 import { MDKatex } from './MDKatex';
 
 marked.use(MDKatex({ nonStandard: true }));
+marked.use(markedAlert());
+marked.use(createDirectives());
 
 function cleanUrl(href: string) {
   try {
@@ -81,9 +85,9 @@ function buildFootnoteArray(footnotes: [number, string, string][]): string {
     .map(([index, title, link]) => {
       const ele =
         link === title
-          ? `<code style="opacity: 0.6;font-size: 1em;">[${index}]</code>: <i style="word-break: break-all;font-size: 1em;">${title}</i>`
-          : `<code style="opacity: 0.6;font-size: 1em;">[${index}]</code> ${title}: <i style="word-break: break-all;font-size: 1em;">${link}</i>`;
-      return `<p style="font-size: 0.8em;margin: 0;padding: 0;">${ele}</p>`;
+          ? `<code>[${index}]</code>: <i>${title}</i>`
+          : `<code>[${index}]</code> ${title}: <i>${link}</i>`;
+      return `<p>${ele}</p>`;
     })
     .join(`\n`);
 }
@@ -197,7 +201,7 @@ export function initRenderer(opts: IOpts) {
 
     paragraph({ tokens }: Tokens.Paragraph): string {
       const text = this.parser.parseInline(tokens);
-      const isFigureImage = text.includes(`<figure`) || text.includes(`<img`);
+      const isFigureImage = text.startsWith(`<figure`); // || text.startsWith(`<img`);
       const isEmpty = text.trim() === ``;
       if (isFigureImage || isEmpty) {
         return text;
@@ -259,39 +263,71 @@ export function initRenderer(opts: IOpts) {
 
     image({ href, title, text }: Tokens.Image): string {
       href = cleanUrl(href);
-      if (title) {
-        // 如果存在标题，生成带有标题的图像 HTML 代码
-        const subText = styledContent(
-          `figcaption`,
-          transform(opts.legend!, text, title)
-        );
-        return `<figure><img src="${href}" title="${title}" alt="${text}"/>${subText}</figure>`;
-      } else {
-        // 如果不存在标题，生成不带标题的图像 HTML 代码
-        const out = `<img src="${href}" alt="${text}"/>`;
-        return out;
+      if (title || text) {
+        const subText = transform(opts.legend!, text, title);
+        if (subText) {
+          // 如果存在标题，生成带有标题的图像 HTML 代码
+          const figcaption = styledContent(`figcaption`, subText);
+          return `<figure><img src="${href}" title="${title}" alt="${text}"/>${figcaption}</figure>`;
+        }
       }
+      // 如果不存在标题，生成不带标题的图像 HTML 代码
+      const out = `<figure><img src="${href}" alt="${text}"/></figure>`;
+      return out;
     },
 
     link({ href, title, tokens }: Tokens.Link): string {
       href = cleanUrl(href);
-      const text = this.parser.parseInline(tokens);
+      let text = this.parser.parseInline(tokens);
+      if (!text) return ``;
+      const className = href.startsWith(`https://mp.weixin.qq.com`)
+        ? `wx_link`
+        : `link`;
 
-      if (href.startsWith(`https://mp.weixin.qq.com`)) {
-        return `<a href="${href}" title="${title || text}" class="wx_link">${text}</a>`;
+      const isImage = tokens[0].type === `image`;
+      title ||= isImage ? (tokens as Tokens.Image[])[0].text : text || ``;
+
+      if (isImage) {
+        const token = (tokens as Tokens.Image[])[0];
+        const img = `<img src="${token.href}" title="${token.title}"/>`;
+        let figcaptionText = transform(opts.legend!, token.text, token.title);
+        if (opts.status) {
+          const ref = addFootnote(title || text, href);
+          figcaptionText = `${figcaptionText}<sup>[${ref}]</sup>`;
+        }
+        const figcaption = figcaptionText
+          ? styledContent(`figcaption`, figcaptionText)
+          : ``;
+
+        return `<figure><a href="${href}" title="${title}" class="${className}">${img}</a>${figcaption}</figure>`;
+      } else {
+        if (opts.status) {
+          const ref = addFootnote(title || text, href);
+          text = `${text}<sup>[${ref}]</sup>`;
+        }
+        return `<a href="${href}" title="${title}" class="${className}">${text}</a>`;
       }
-      const isFigureImage = text.includes(`<figure`) || text.includes(`<img`);
-      if (isFigureImage) {
-        return `<a href="${href}" title="${title}" class="link">${text}</a>`;
-      }
-      if (href === text) {
-        return text;
-      }
-      if (opts.status) {
-        const ref = addFootnote(title || text, href);
-        return `<a href="#" title="${title}" class="link">${text}<sup>[${ref}]</sup></a>`;
-      }
-      return `<a href="${href}" title="${title || text}" class="link">${text}</a>`;
+
+      // const isFigureImage = text.startsWith(`<figure`); // || text.startsWith(`<img`);
+      // if (isFigureImage) {
+      //   title = title || (tokens as Tokens.Image[])[0].text || ``;
+      // }
+
+      // if (href.startsWith(`https://mp.weixin.qq.com`)) {
+      //   return `<a href="${href}" title="${title || text}" class="wx_link">${text}</a>`;
+      // }
+
+      // if (isFigureImage) {
+      //   return `<a href="${href}" title="${title}" class="link">${text}</a>`;
+      // }
+      // if (href === text) {
+      //   return text;
+      // }
+      // if (opts.status) {
+      //   const ref = addFootnote(title || text, href);
+      //   return `<a href="#" title="${title}" class="link">${text}<sup>[${ref}]</sup></a>`;
+      // }
+      // return `<a href="${href}" title="${title || text}" class="link">${title || text}</a>`;
     },
 
     strong({ tokens }: Tokens.Strong): string {

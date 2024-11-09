@@ -20,7 +20,6 @@ import {
   fontFamilyOptions,
   fontSizeOptions,
   legendOptions,
-  themeOptions,
 } from '@/config';
 import { useDisplayStore, useStore } from '@/stores';
 import { mergeCss, solveWeChatImage } from '@/utils';
@@ -33,9 +32,10 @@ import EditDropdown from './EditDropdown.vue';
 import FileDropdown from './FileDropdown.vue';
 import FormatDropdown from './FormatDropdown.vue';
 import HelpDropdown from './HelpDropdown.vue';
-
 import PostInfo from './PostInfo.vue';
+
 import StyleDropdown from './StyleDropdown.vue';
+import ThemeDialog from './ThemeDialog.vue';
 
 const emit = defineEmits([
   `addFormat`,
@@ -87,6 +87,7 @@ function copy() {
       solveWeChatImage();
 
       const content = await store.output2Html();
+
       const blob = new Blob([content], { type: `text/html` });
       const clipboardItem = new ClipboardItem({ 'text/html': blob });
       navigator.clipboard.write([clipboardItem]);
@@ -109,7 +110,6 @@ function copy() {
     });
   }, 350);
 }
-
 </script>
 
 <template>
@@ -123,6 +123,7 @@ function copy() {
       />
       <EditDropdown />
       <StyleDropdown />
+      <ThemeDialog />
       <HelpDropdown />
     </Menubar>
 

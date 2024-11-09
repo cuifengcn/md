@@ -11,6 +11,9 @@ import * as prettierPluginCss from 'prettier/plugins/postcss';
 import { format } from 'prettier/standalone';
 import { v4 } from 'uuid';
 
+
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export function addPrefix(str: string) {
   return `${prefix}__${str}`;
 }

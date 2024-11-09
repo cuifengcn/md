@@ -88,6 +88,7 @@ export enum AiGenerateType {
   rewrite = `优化`,
   expand = `扩写`,
   fullArticle = `优化全文`,
+  generateArticle = `生成全文`
 }
 
 export interface PostArticleAccount {

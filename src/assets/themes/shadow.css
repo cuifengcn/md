@@ -7,11 +7,7 @@
     PingFangSC-regular,
     serif;
 }
-#output {
-  margin: 0;
-  padding: 0 10px;
-  line-break: anywhere;
-}
+
 h1 {
   display: flex;
   margin: 2em 0px 1em 0px;
@@ -64,7 +60,7 @@ h2 .content {
   margin: 0;
   text-align: left;
   position: relative;
-  transform: translate3d(-5px, -5px, 0px);
+  transform: translate(-5px, -5px);
 }
 h2 .prefix {
   display: none;
@@ -187,7 +183,8 @@ p {
   padding: 8px 0px;
 }
 
-blockquote {
+blockquote,
+.markdown-alert {
   margin: 20px 0px;
   padding: 10px 10px 10px 20px;
   border-style: none none none solid;
@@ -197,12 +194,40 @@ blockquote {
   border-radius: 0px;
   background-color: rgba(74, 174, 186, 0.05);
 }
-.blockquote_p {
+.blockquote_p,
+.markdown-alert p {
   line-height: 1.8em;
   letter-spacing: 0em;
   text-align: left;
   font-weight: normal;
   margin: 0px;
+}
+
+.block-1 {
+  border: 1px solid var(--md-primary-color);
+  border-radius: 0;
+  margin: 15px 0px;
+  padding: 0;
+  text-align: left;
+}
+.block-1-inner {
+  border: 1px solid var(--md-primary-color);
+  padding: 15px;
+  margin: 0;
+  text-align: left;
+  transform: translate3d(-5px, -5px, 0px);
+}
+.block-2 {
+  margin: 20px 8px;
+  padding: 10px 20px;
+  border: 3px none rgba(0, 0, 0, 0.4);
+  border-radius: 0;
+}
+.block-3 {
+  margin: 20px 8px;
+  padding: 10px 20px;
+  border: 3px none rgba(0, 0, 0, 0.4);
+  border-radius: 0;
 }
 
 .code_pre {
@@ -386,9 +411,16 @@ figcaption {
 }
 
 footnotes p {
-  display: inline-block;
-  text-align: left;
+  width: 100%;
+  font-size: 0.8em;
+  margin: 0;
+  padding: 0;
+}
+footnotes code {
+  opacity: 0.6;
   font-size: 1em;
-  line-height: 1.8em;
-  letter-spacing: 0em;
+}
+footnotes i {
+  word-break: break-all;
+  font-size: 1em;
 }

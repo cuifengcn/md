@@ -22,7 +22,6 @@ async function fetchSuggestion(state: EditorState): Promise<string> {
   const prevContent = content
     .substring(Math.max(0, cursor - 200), cursor)
     .trim();
-  console.log(prevContent);
 
   const key = md5(prevContent);
   if (historyCache.has(key)) {

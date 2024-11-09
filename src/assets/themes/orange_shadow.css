@@ -7,9 +7,7 @@
     PingFangSC-regular,
     serif;
 }
-#output {
-  line-break: anywhere;
-}
+
 h1 {
   /**一级标题*/
   display: block;
@@ -46,13 +44,13 @@ h2 .content {
   text-align: left;
 }
 h2::after {
-  border-bottom: 27px solid rgba(239, 235, 233, 1); /* 设置底部边框 */
+  border-bottom: 27px solid #efebe9; /* 设置底部边框 */
   border-right: 20px solid transparent; /* 设置右侧边框 */
   content: ' '; /* 设置伪元素内容 */
   display: inline-block;
 }
 .dark h2::after {
-  border-bottom: 27px solid rgb(93, 94, 95);
+  border-bottom: 27px solid #5d5e5f;
 }
 
 h3 {
@@ -88,24 +86,42 @@ p {
   text-align: justify;
 }
 
-blockquote {
+blockquote,
+.markdown-alert {
   /**引用*/
   border-left: 3px solid var(--md-primary-color);
   color: rgba(0, 0, 0, 0.5);
   background: #f7f7f7;
-  margin: 20px 0px 20px 0px;
+  margin: 20px 0px;
   padding: 10px 10px 10px 20px;
 }
-.dark blockquote {
+.dark blockquote,
+.dark .markdown-alert {
   /**暗黑模式下的引用*/
   background: #080808;
 }
 
-.blockquote_p {
+.blockquote_p,
+.markdown-alert p {
   /**引用中的段落*/
   display: block;
   margin: 0;
   font-size: 1em;
+}
+.markdown-alert-note {
+  border-left: 3px solid var(--markdown-alert-note-color);
+}
+.markdown-alert-tip {
+  border-left: 3px solid var(--markdown-alert-tip-color);
+}
+.markdown-alert-important {
+  border-left: 3px solid var(--markdown-alert-important-color);
+}
+.markdown-alert-warning {
+  border-left: 3px solid var(--markdown-alert-warning-color);
+}
+.markdown-alert-caution {
+  border-left: 3px solid var(--markdown-alert-caution-color);
 }
 
 .code_pre {
@@ -284,4 +300,19 @@ figcaption {
   text-align: center;
   color: #888;
   font-size: 0.8em;
+}
+
+footnotes p {
+  width: 100%;
+  font-size: 0.8em;
+  margin: 0;
+  padding: 0;
+}
+footnotes code {
+  opacity: 0.6;
+  font-size: 1em;
+}
+footnotes i {
+  word-break: break-all;
+  font-size: 1em;
 }

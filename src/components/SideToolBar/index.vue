@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import SelectAiModel from './SelectAiModel.vue'
+import PcMode from './PcMode.vue';
+import SelectAiModel from './SelectAiModel.vue';
 </script>
 
 <template>
-  <el-col class="absolute right-[14px] top-[70px]">
+  <div class="absolute right-[8px] top-[70px] flex flex-col gap-4">
     <SelectAiModel />
-  </el-col>
+    <PcMode />
+  </div>
 </template>
 
 <style scoped lang="scss"></style>

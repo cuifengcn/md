@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useStore } from '@/stores'
+import { Icon } from '@iconify/vue';
 
 import { storeToRefs } from 'pinia'
 
@@ -15,6 +16,7 @@ const {
   toggleEditOnLeft,
   exportEditorContent2HTML,
   exportEditorContent2MD,
+  exportEditorContent2PDF,
   importMarkdownContent,
 } = store
 </script>
@@ -42,6 +44,12 @@ const {
           <ElIconDocument />
         </el-icon>
         导出 .html
+      </MenubarItem>
+      <MenubarItem @click="exportEditorContent2PDF()">
+        <el-icon class="mr-2 h-4 w-4">
+          <Icon icon="icon-park-outline:file-pdf" />
+        </el-icon>
+        导出 .pdf
       </MenubarItem>
       <MenubarSeparator />
       <MenubarItem @click="toggleDark()">

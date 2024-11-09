@@ -100,7 +100,8 @@
 
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    /* --ring: 0 0% 3.9%; */
+    --ring: 150 72% 44%;
     --radius: 0.5rem;
   }
 
@@ -131,7 +132,8 @@
 
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    /* --ring: 0 0% 83.1%; */
+    --ring: 150 72% 44%;
   }
 }
 
@@ -149,5 +151,10 @@
     @apply hover:bg-accent h-[25px] inline-flex flex-shrink-0 flex-grow-0 basis-auto 
     items-center justify-center rounded px-[6px] mx-[4px] text-[13px] leading-none outline-none 
     focus:relative data-[state="on"]:bg-green-600;
+  }
+  .menu-button {
+    @apply hover:bg-accent focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent 
+    data-[state=open]:text-accent-foreground flex cursor-default select-none items-center rounded-sm 
+    px-3 py-1.5 text-sm font-medium outline-none;
   }
 }

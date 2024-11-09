@@ -22,7 +22,6 @@ function openaiAsk(
     onError?: (error: unknown) => void
   },
 ) {
-  console.log(messages)
 
   if (!checkApiKey())
     return
