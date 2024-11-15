@@ -22,8 +22,6 @@ const blockRule = /^(\${1,2})\n((?:\\[\s\S]|[^\\])+?)\n\1(?:\n|$)/;
 function createRenderer(display: boolean): RendererExtensionFunction {
   return (token) => {
     const run = () => {
-      console.log(window.MathJax);
-
       window.MathJax.texReset();
       const mjxContainer = window.MathJax.tex2svg(token.text, { display });
       const svg = mjxContainer.firstChild as SVGElement;

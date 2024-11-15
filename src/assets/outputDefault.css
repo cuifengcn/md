@@ -116,6 +116,9 @@ footnotes i {
   word-break: break-all;
   font-size: 1em;
 }
+.hljs {
+  position: relative;
+}
 
 @media print {
   body {

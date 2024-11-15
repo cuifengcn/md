@@ -33,7 +33,9 @@ import {
 import { initRenderer } from '@/utils/renderer';
 import { EditorState } from '@codemirror/state';
 import { useDark, useStorage, useToggle } from '@vueuse/core';
+import ClipboardJS from 'clipboard';
 import { ElLoading, ElMessage, ElMessageBox } from 'element-plus';
+import { debounce } from 'es-toolkit';
 import { marked } from 'marked';
 import { defineStore } from 'pinia';
 import readingTime from 'reading-time';
@@ -207,7 +209,7 @@ export const useStore = defineStore(`store`, () => {
     return await res.text();
   };
 
-  const output2Html = async (): Promise<string> => {
+  const output2Html = async (options?: { styles?: string }): Promise<string> => {
     const styles = cssThemeContent.value;
     // 公众号不支持 position， 转换为等价的 translateY
     const htmlContent = document
@@ -224,6 +226,7 @@ export const useStore = defineStore(`store`, () => {
             <style>${styles}</style>
             <style>${codeBlockCss}</style>
             <style>${background.value}</style>
+            <style>${options?.styles}</style>
           </head>
           <body>
             <section class="output">
@@ -546,9 +549,20 @@ export const useStore = defineStore(`store`, () => {
   };
 
   // 导出编辑器内容为 HTML，并且下载到本地
-  const exportEditorContent2HTML = () => {
-    exportHTML();
-    document.querySelector(`#output`)!.innerHTML = output.value;
+  const exportEditorContent2HTML = async () => {
+    const htmlStr = await output2Html({
+      styles: `body {width: 750px; margin: auto;}`,
+    });
+    const downLink = document.createElement(`a`);
+
+    downLink.download = `content.html`;
+    downLink.style.display = `none`;
+    const blob = new Blob([htmlStr]);
+
+    downLink.href = URL.createObjectURL(blob);
+    document.body.appendChild(downLink);
+    downLink.click();
+    document.body.removeChild(downLink);
   };
 
   // 导出编辑器内容为 PDF， 并且下载到本地

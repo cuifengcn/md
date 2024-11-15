@@ -1,9 +1,8 @@
 import type { ExtendedProperties, IOpts, ThemeStyles } from '@/types';
 import type { PropertiesHyphen } from 'csstype';
 import type { MarkedOptions, Renderer, RendererObject, Tokens } from 'marked';
-import type { MarkOptions } from 'node:perf_hooks';
-import { toMerged } from 'es-toolkit';
 
+import { toMerged } from 'es-toolkit';
 import hljs from 'highlight.js';
 import { marked } from 'marked';
 import mermaid from 'mermaid';
