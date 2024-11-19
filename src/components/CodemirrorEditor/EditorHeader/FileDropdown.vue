@@ -52,7 +52,7 @@ const {
         导出 .pdf
       </MenubarItem>
       <MenubarSeparator />
-      <MenubarItem @click="toggleDark()">
+      <MenubarItem @click="toggleDark(!isDark)">
         <el-icon class="mr-2 h-4 w-4" :class="{ 'opacity-0': !isDark }">
           <ElIconCheck />
         </el-icon>

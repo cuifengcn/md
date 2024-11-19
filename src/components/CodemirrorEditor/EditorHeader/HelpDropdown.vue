@@ -63,6 +63,10 @@ function openHelpDialog(title: string, content: string[]) {
         <el-icon class="mr-2 h-4 w-4" />
         <span>提示块</span>
       </MenubarItem>
+      <MenubarItem @click="openHelpDialog('mermaid图', h.memaidHelp)">
+        <el-icon class="mr-2 h-4 w-4" />
+        <span>mermaid图</span>
+      </MenubarItem>
       <MenubarItem @click="openHelpDialog('图片', h.imageHelp)">
         <el-icon class="mr-2 h-4 w-4" />
         <span>图片</span>

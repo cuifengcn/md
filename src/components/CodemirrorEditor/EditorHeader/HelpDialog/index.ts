@@ -167,6 +167,37 @@ export const tipsHelp: string[] = [
 > 操作的潜在负面后果。
 `,
 ];
+export const memaidHelp: string[] = [
+  `
+\`\`\`mermaid
+graph TD;
+  A-->B;
+  A-->C;
+  B-->D;
+  C-->D;
+\`\`\`
+`,
+  `
+\`\`\`mermaid
+pie
+  title Key elements in Product X
+  "Calcium" : 42.96
+  "Potassium" : 50.05
+  "Magnesium" : 10.01
+  "Iron" : 5
+\`\`\`
+`,
+  `
+\`\`\`mermaid
+pie
+  title 为什么总是宅在家里？
+  "喜欢宅" : 45
+  "天气太热" : 70
+  "穷" : 500
+  "没人约" : 95
+\`\`\`
+`,
+];
 export const imageHelp: string[] = [
   `
 ![这里写图片描述](https://picsum.photos/536/354)

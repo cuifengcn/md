@@ -129,7 +129,26 @@ $$
 > [!CAUTION]
 > 操作的潜在负面后果。
 
-### 10. 图片
+### 10. mermaid图
+
+```mermaid
+graph TD;
+  A-->B;
+  A-->C;
+  B-->D;
+  C-->D;
+```
+
+```mermaid
+pie
+  title Key elements in Product X
+  "Calcium" : 42.96
+  "Potassium" : 50.05
+  "Magnesium" : 10.01
+  "Iron" : 5
+```
+
+### 11. 图片
 
 :::block-1
 ![这里写图片描述](https://picsum.photos/536/354)
@@ -137,7 +156,7 @@ $$
 ![示例图片](https://picsum.photos/536/354 "示例图片标题")
 :::
 
-### 11. 表格
+### 12. 表格
 
 :::block-1
 | 姓名 | 年龄 | 城市 |
@@ -187,8 +206,7 @@ $$
 
 ### 4. 导出
 
-- 文章支持导出为`markdown`、`html`、`pdf`不同格式
-出
+- 文章支持导出为`markdown`、`html`、`pdf`不同格式。
 
 
 

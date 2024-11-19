@@ -45,7 +45,6 @@ h2 .prefix {
   display: none;
 }
 h2 .suffix {
-  height: 3px;
   width: 100%;
   border-bottom: 3px solid var(--md-primary-color);
 }

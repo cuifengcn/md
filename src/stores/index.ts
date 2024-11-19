@@ -159,9 +159,29 @@ export const useStore = defineStore(`store`, () => {
     localStorage.setItem(`articles`, JSON.stringify(articles.value));
   };
 
+  // 为函数添加刷新编辑器的功能
+  const withAfterRefresh =
+    (fn: (...rest: any[]) => void) =>
+    (...rest: any[]) => {
+      fn(...rest);
+      // eslint-disable-next-line ts/no-use-before-define
+      editorRefresh();
+    };
+
   // 是否开启深色模式
   const isDark = useDark();
-  const toggleDark = useToggle(isDark);
+  const _toggleDark = useToggle(isDark);
+  const toggleDark = async (isDark?: boolean) => {
+    if (isDark === undefined) {
+      _toggleDark();
+    } else {
+      _toggleDark(isDark);
+    }
+    await sleep(1000);
+
+    // eslint-disable-next-line ts/no-use-before-define
+    editorRefresh();
+  };
 
   // 是否开启 Mac 代码块
   const isMacCodeBlock = useStorage(`isMacCodeBlock`, true);
@@ -209,7 +229,9 @@ export const useStore = defineStore(`store`, () => {
     return await res.text();
   };
 
-  const output2Html = async (options?: { styles?: string }): Promise<string> => {
+  const output2Html = async (options?: {
+    styles?: string;
+  }): Promise<string> => {
     const styles = cssThemeContent.value;
     // 公众号不支持 position， 转换为等价的 translateY
     const htmlContent = document
@@ -354,7 +376,7 @@ export const useStore = defineStore(`store`, () => {
   });
 
   // 更新编辑器
-  const editorRefresh = () => {
+  const editorRefresh = () => {    
     codeThemeChange();
     renderer.reset({ status: isCiteStatus.value, legend: legend.value });
 
@@ -458,14 +480,6 @@ export const useStore = defineStore(`store`, () => {
     watchTheme();
     watch(isDark, watchTheme);
   });
-
-  // 为函数添加刷新编辑器的功能
-  const withAfterRefresh =
-    (fn: (...rest: any[]) => void) =>
-    (...rest: any[]) => {
-      fn(...rest);
-      editorRefresh();
-    };
 
   const themeChanged = withAfterRefresh((newTheme: string) => {
     theme.value = newTheme;

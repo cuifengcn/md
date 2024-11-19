@@ -2,17 +2,20 @@ import type { ExtendedProperties, IOpts, ThemeStyles } from '@/types';
 import type { PropertiesHyphen } from 'csstype';
 import type { MarkedOptions, Renderer, RendererObject, Tokens } from 'marked';
 
+import { useStore } from '@/stores';
 import { toMerged } from 'es-toolkit';
 import hljs from 'highlight.js';
 import { marked } from 'marked';
 import mermaid from 'mermaid';
 import markedAlert from './markdownExtensions/alert';
 import { createDirectives } from './markdownExtensions/directive';
+// import { markedFootnote } from './markdownExtensions/footnote';
 import { MDKatex } from './MDKatex';
 
 marked.use(MDKatex({ nonStandard: true }));
 marked.use(markedAlert());
 marked.use(createDirectives());
+// marked.use(markedFootnote());
 
 function cleanUrl(href: string) {
   try {
@@ -218,9 +221,15 @@ export function initRenderer(opts: IOpts) {
       if (lang.startsWith(`mermaid`)) {
         clearTimeout(codeIndex);
         codeIndex = setTimeout(() => {
+          // const store = useStore();
+          mermaid.initialize({
+            startOnLoad: true,
+            // theme: store.isDark ? `dark` : `base`,
+            // darkMode: store.isDark,
+          });
           mermaid.run();
         }, 0) as any as number;
-        return `<pre class="mermaid">${text}</pre>`;
+        return `<div class="mermaid">${text}</div>`;
       }
       const langText = lang.split(` `)[0];
       const language = hljs.getLanguage(langText) ? langText : `plaintext`;

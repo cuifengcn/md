@@ -44,7 +44,7 @@ function createRenderer(display: boolean): RendererExtensionFunction {
         const store = useStore();
         store.editorRefresh();
       }, 1000);
-      return `<span style="color: gray;">加载中,请刷新</span>`;
+      return `<span style="color: gray;">加载中</span>`;
     }
   };
 }

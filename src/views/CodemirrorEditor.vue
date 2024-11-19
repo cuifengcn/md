@@ -181,6 +181,12 @@ function uploadImage(
 // 初始化编辑器
 function initEditor() {
   const editorDom = document.querySelector<Element>(`#editor`)!;
+  const updateDebounce = debounce((update) => {
+    onEditorRefresh();
+    if (currentArticle.value) {
+      currentArticle.value.content = update.state.doc.toString();
+    }
+  }, 300);
 
   editorExtensions.value = initEditorExtensions(
     (update) => {
@@ -189,13 +195,7 @@ function initEditor() {
           displayStore.isShowAddArticleDialog = true;
           return;
         }
-        debounce(() => {
-          onEditorRefresh();
-          if (currentArticle.value) {
-            currentArticle.value.content = update.state.doc.toString();
-          }
-        }, 300)();
-        store.editorReadTime = toRaw(store.editor)?.readTime();
+        updateDebounce(update);
       }
       return false;
     },
