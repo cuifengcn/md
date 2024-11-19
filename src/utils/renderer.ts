@@ -3,6 +3,7 @@ import type { PropertiesHyphen } from 'csstype';
 import type { MarkedOptions, Renderer, RendererObject, Tokens } from 'marked';
 
 import { useStore } from '@/stores';
+import { ElMessage } from 'element-plus';
 import { toMerged } from 'es-toolkit';
 import hljs from 'highlight.js';
 import { marked } from 'marked';
@@ -221,13 +222,18 @@ export function initRenderer(opts: IOpts) {
       if (lang.startsWith(`mermaid`)) {
         clearTimeout(codeIndex);
         codeIndex = setTimeout(() => {
-          // const store = useStore();
-          mermaid.initialize({
-            startOnLoad: true,
-            // theme: store.isDark ? `dark` : `base`,
-            // darkMode: store.isDark,
-          });
-          mermaid.run();
+          try {
+            // const store = useStore();
+            mermaid.initialize({
+              startOnLoad: true,
+              // theme: store.isDark ? `dark` : `base`,
+              // darkMode: store.isDark,
+            });
+            mermaid.run();
+          } catch (error) {
+            console.log(`mermaid error: ${error}`);
+            ElMessage.error(`mermaid failed: ${error}`);
+          }
         }, 0) as any as number;
         return `<div class="mermaid">${text}</div>`;
       }

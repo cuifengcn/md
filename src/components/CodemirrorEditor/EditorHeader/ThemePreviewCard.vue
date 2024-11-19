@@ -3,6 +3,7 @@ import type { IConfigOption } from '@/types';
 import OUTPUT_DEFAULT from '@/assets/outputDefault.css?raw';
 import { useStore } from '@/stores';
 import { Uuidv4 } from '@/utils';
+import { ElMessage } from 'element-plus';
 import juice from 'juice';
 import { nextTick, onMounted, reactive, ref } from 'vue';
 
@@ -40,8 +41,7 @@ const element = `<div class="${className}">
 </div>`;
 
 onMounted(() => {
-  content.value = juice(
-    `
+  const htmlStr = `
     <style>${props.theme.value.replaceAll(`.output`, `.${className}`)}</style>
     <style>${OUTPUT_DEFAULT}</style>
     <style>
@@ -49,12 +49,17 @@ onMounted(() => {
       font-size: 12px;
     }</style>
     ${element}
-    `,
-    {
+    `;
+
+  try {
+    content.value = juice(htmlStr, {
       inlinePseudoElements: true,
       preserveImportant: true,
-    }
-  );
+    });
+  } catch (err) {
+    ElMessage.error(`错误❌: ${err}`);
+    content.value = htmlStr;
+  }
 });
 </script>
 

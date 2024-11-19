@@ -3,6 +3,7 @@ import type { Block, Inline, Theme } from '@/types';
 import type { PropertiesHyphen } from 'csstype';
 import { createHash } from 'node:crypto';
 import { prefix } from '@/config';
+import { ElMessage } from 'element-plus';
 import juice from 'juice';
 import * as prettierPluginBabel from 'prettier/plugins/babel';
 import * as prettierPluginEstree from 'prettier/plugins/estree';
@@ -11,8 +12,9 @@ import * as prettierPluginCss from 'prettier/plugins/postcss';
 import { format } from 'prettier/standalone';
 import { v4 } from 'uuid';
 
-
-export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export function addPrefix(str: string) {
   return `${prefix}__${str}`;
@@ -358,10 +360,15 @@ export function solveWeChatImage() {
 }
 
 export function mergeCss(html: string) {
-  return juice(html, {
-    inlinePseudoElements: true,
-    preserveImportant: true,
-  });
+  try {
+    return juice(html, {
+      inlinePseudoElements: true,
+      preserveImportant: true,
+    });
+  } catch (err) {
+    ElMessage.error(`错误❌: ${err}`);
+    return html;
+  }
 }
 
 export function Uuidv4() {

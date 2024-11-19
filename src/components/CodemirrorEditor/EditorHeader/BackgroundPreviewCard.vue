@@ -2,6 +2,7 @@
 import type { IConfigOption } from '@/types';
 import { useStore } from '@/stores';
 import { Uuidv4 } from '@/utils';
+import { ElMessage } from 'element-plus';
 import juice from 'juice';
 import { nextTick, onMounted, reactive, ref } from 'vue';
 
@@ -16,16 +17,19 @@ const content = ref(``);
 const element = `<div class="${store.isDark ? `dark` : ``}  w-full h-full"><div class="${className} w-full h-full" /></div>`;
 
 onMounted(() => {
-  content.value = juice(
-    `
+  const htmlStr = `
     <style>${props.background.value.replaceAll(`.output`, `.${className}`)}</style>
     ${element}
-    `,
-    {
+    `;
+  try {
+    content.value = juice(htmlStr, {
       inlinePseudoElements: true,
       preserveImportant: true,
-    }
-  );
+    });
+  } catch (err) {
+    ElMessage.error(`错误❌: ${err}`);
+    content.value = htmlStr;
+  }
 });
 </script>
 

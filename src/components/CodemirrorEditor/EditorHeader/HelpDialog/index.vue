@@ -35,6 +35,18 @@ function copy(text: string) {
     type: `success`,
   });
 }
+function toHTML(item: string) {
+  const htmlStr = `<style>${store.theme}</style><div>${marked.parse(item)}</div>`;
+  try {
+    return juice(htmlStr, {
+      inlinePseudoElements: true,
+      preserveImportant: true,
+    });
+  } catch (err) {
+    ElMessage.error(`错误❌: ${err}`);
+    return htmlStr;
+  }
+}
 
 function onUpdate(val: boolean) {
   if (!val) {
@@ -67,11 +79,7 @@ function onUpdate(val: boolean) {
         <el-col :span="12" class="p-5 shadow">
           <div
             class="h-full w-full overflow-auto p-2 text-sm"
-            v-html="
-              juice(
-                `<style>${store.theme}</style><div>${marked.parse(item)}</div>`
-              )
-            "
+            v-html="toHTML(item)"
           />
         </el-col>
       </el-row>
