@@ -1,19 +1,35 @@
 import type { EditorState } from '@codemirror/state';
-import type { ChatCompletionStream } from 'openai/lib/ChatCompletionStream';
-import { openaiAsk } from '@/ai';
-import { md5 } from '@/utils';
+import type { Completion } from 'openai/resources/completions';
+import type { Stream } from 'openai/streaming';
+import { openaiFim } from '@/ai';
+import { useAiModelStore, useStore } from '@/stores';
+import { md5, sleep } from '@/utils';
 import { EditorView } from '@codemirror/view';
 import { inlineSuggestion } from 'codemirror-extension-inline-suggestion';
 import { LRUCache } from 'lru-cache';
 
-let suggestionStream: ChatCompletionStream | undefined;
+let suggestionStream:
+  | (Stream<Completion> & { _request_id?: string | null | undefined })
+  | undefined;
 const historyCache = new LRUCache<string, string>({
   max: 10,
 });
 async function fetchSuggestion(state: EditorState): Promise<string> {
-  if (!suggestionStream?.aborted) {
-    suggestionStream?.abort();
+  // 中断上一次
+  if (!suggestionStream?.controller.signal.aborted) {
+    suggestionStream?.controller.abort();
   }
+  // 检查apiKey
+  const aiModelStore = useAiModelStore();
+  if (!aiModelStore.selectedAiModel.apiKey) {
+    return ``;
+  }
+  // 检查设置
+  const store = useStore();
+  if (!store.isAiRealtime) {
+    return ``;
+  }
+  // 检查缓存
   suggestionStream = undefined;
   // or make an async API call here based on editor state
   const cursor = state.selection.main.head;
@@ -22,6 +38,13 @@ async function fetchSuggestion(state: EditorState): Promise<string> {
   const prevContent = content
     .substring(Math.max(0, cursor - 200), cursor)
     .trim();
+  const suffixContent = content
+    .substring(cursor, Math.min(cursor + 200, content.length))
+    .trim()
+    .split(/\n/)[0];
+  console.log(`prompt: ${prevContent}`);
+
+  console.log(` suffix: ${suffixContent}`);
 
   const key = md5(prevContent);
   if (historyCache.has(key)) {
@@ -35,16 +58,8 @@ async function fetchSuggestion(state: EditorState): Promise<string> {
   let res = ``;
   let waiting = true;
   let timeout = 20000;
-  suggestionStream = await openaiAsk(
-    [
-      {
-        role: `user`,
-        content: `请根据以下marrkdown格式的文本,在下面文本的基础上进行续写,符合当前内容的延续,尽量不超过100字,且只返回续写的内容。
-
-${prevContent}
-`,
-      },
-    ],
+  suggestionStream = await openaiFim(
+    prevContent,
     {
       onGenerating: (chunk) => {
         res += chunk;
@@ -57,12 +72,13 @@ ${prevContent}
         console.error(error);
         waiting = false;
       },
-    }
+    },
+    suffixContent
   );
   // eslint-disable-next-line no-unmodified-loop-condition
   while (waiting && timeout > 0) {
     timeout -= 100;
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await sleep(100);
   }
   return res;
 }
@@ -75,8 +91,10 @@ export function InlineSuggestion() {
     }),
     EditorView.updateListener.of((update) => {
       if (update.selectionSet && suggestionStream) {
-        if (!suggestionStream.aborted) {
-          suggestionStream.abort();
+        if (!suggestionStream.controller.signal.aborted) {
+          const tmp = suggestionStream;
+          suggestionStream = undefined;
+          tmp.controller.abort();
         }
         suggestionStream = undefined;
       }

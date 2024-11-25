@@ -1,4 +1,10 @@
-import type { AiModel, Article, IConfigOption, PreviewTheme } from '@/types';
+import type {
+  AiModel,
+  Article,
+  IConfigOption,
+  OutlineItem,
+  PreviewTheme,
+} from '@/types';
 import type { MyEditorView } from '@/utils/codeMirrorUtil/editor';
 import type { Extension } from '@codemirror/state';
 import type { ReadTimeResults } from 'reading-time';
@@ -78,6 +84,7 @@ export const useStore = defineStore(`store`, () => {
   const editor = ref<MyEditorView | null>(null);
   const editorExtensions = ref<Extension[]>();
   const editorReadTime = ref<ReadTimeResults>();
+  const editorOutline = ref<Array<OutlineItem>>();
 
   const selectArticle = async (id: string) => {
     if (id === currentArticle.value?.id) {
@@ -194,6 +201,14 @@ export const useStore = defineStore(`store`, () => {
   // 是否开启微信外链接底部引用
   const isCiteStatus = useStorage(`isCiteStatus`, false);
   const toggleCiteStatus = useToggle(isCiteStatus);
+
+  // 是否同步滚动
+  const isSyncScroll = useStorage(`isSyncScroll`, true);
+  const toggleSyncScroll = useToggle(isSyncScroll);
+
+  // 是否启用AI实时提示
+  const isAiRealtime = useStorage(`isAiRealtime`, true);
+  const toggleAiRealtime = useToggle(isAiRealtime);
 
   const output = ref(``);
 
@@ -373,12 +388,18 @@ export const useStore = defineStore(`store`, () => {
     // ),
     fonts: fontFamily.value,
     size: fontSizeNumber.value,
+    outline: editorOutline.value,
   });
 
   // 更新编辑器
-  const editorRefresh = () => {    
+  const editorRefresh = () => {
     codeThemeChange();
-    renderer.reset({ status: isCiteStatus.value, legend: legend.value });
+    editorOutline.value = [];
+    renderer.reset({
+      status: isCiteStatus.value,
+      legend: legend.value,
+      outline: editorOutline.value,
+    });
 
     let outputTemp = marked.parse(
       editor.value?.state.doc.toString() || ``
@@ -679,6 +700,12 @@ export const useStore = defineStore(`store`, () => {
     isEditOnLeft,
     toggleEditOnLeft,
 
+    isSyncScroll,
+    toggleSyncScroll,
+
+    isAiRealtime,
+    toggleAiRealtime,
+
     isMacCodeBlock,
     isCiteStatus,
     citeStatusChanged,
@@ -688,6 +715,7 @@ export const useStore = defineStore(`store`, () => {
     editor,
     editorExtensions,
     editorReadTime,
+    editorOutline,
     cssEditor,
     defaultCssThemes,
     cssThemeContent,
@@ -776,52 +804,19 @@ export const useDisplayStore = defineStore(`display`, () => {
 });
 
 export const useAiModelStore = defineStore(`AiModel`, () => {
-  const models = reactive<AiModel[]>([
-    {
-      name: `glm-4-flash`,
-      from: `bigmodel`,
-      desc: `智谱AI首个免费API, 零成本调用大模型`,
-      baseUrl: `https://open.bigmodel.cn/api/paas/v4`,
-      apiKey: ``,
-      refUrl: `https://bigmodel.cn/usercenter/apikeys`,
-    },
-    {
-      name: `glm-4-plus`,
-      from: `bigmodel`,
-      desc: `智谱清言的高智能旗舰: 性能全面提升，长文本和复杂任务能力显著增强`,
-      baseUrl: `https://open.bigmodel.cn/api/paas/v4`,
-      apiKey: ``,
-      refUrl: `https://bigmodel.cn/usercenter/apikeys`,
-    },
-    {
-      name: `deepseek-chat`,
-      from: `deepseek`,
-      desc: `北京深度求索人工智能基础技术研究有限公司推出的深度合成服务算法`,
-      baseUrl: `https://api.deepseek.com`,
-      apiKey: ``,
-      refUrl: `https://platform.deepseek.com/api_keys`,
-    },
-    {
-      name: `ChatGPT-3.5`,
-      from: `openai`,
-      desc: `OpenAI 的 GPT-3.5 模型`,
-      baseUrl: `https://api.openai.com/v1`,
-      apiKey: ``,
-      refUrl: `https://platform.openai.com/api-keys`,
-    },
-  ]);
-
-  const selectedAiModel = useStorage<AiModel>(
-    `selectedAiModel`,
-    toRaw(models[0])
-  );
+  const selectedAiModel = useStorage<AiModel>(`selectedAiModel`, {
+    name: `deepseek大模型(深度求索)`,
+    modelName: `deepseek-chat`,
+    baseUrl: `https://api.deepseek.com`,
+    maxTokens: 80,
+  });
 
   // 显示选择模型面板
   const isShowSelectAiModelDialog = ref(false);
   const toggleShowSelectAiModelDialog = useToggle(isShowSelectAiModelDialog);
 
   const selectAiModel = (model: AiModel) => {
-    ElMessage.success(`已选择 ${model.name}`);
+    ElMessage.success(`已选择 ${model.modelName}`);
     selectedAiModel.value = model;
   };
 
@@ -830,7 +825,6 @@ export const useAiModelStore = defineStore(`AiModel`, () => {
   const toggleShowPromptDialog = useToggle(isShowPromptDialog);
 
   return {
-    models,
     selectedAiModel,
     isShowSelectAiModelDialog,
     toggleShowSelectAiModelDialog,

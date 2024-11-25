@@ -7,13 +7,20 @@ import {
 } from '@/components/ui/dialog';
 import { useDisplayStore } from '@/stores';
 import { checkImage, removeLeft } from '@/utils';
-
 import { javascript } from '@codemirror/lang-javascript';
+
 import { EditorView } from '@codemirror/view';
 import { UploadFilled } from '@element-plus/icons-vue';
-
 import { ElMessage } from 'element-plus';
+
 import { nextTick, onBeforeMount, ref, watch } from 'vue';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItemText,
+  SelectTrigger,
+} from '../ui/select';
 
 const emit = defineEmits([`uploadImage`]);
 
@@ -115,10 +122,10 @@ const options = [
     value: `minio`,
     label: `MinIO`,
   },
-  {
-    value: `formCustom`,
-    label: `自定义代码`,
-  },
+  // {
+  //   value: `formCustom`,
+  //   label: `自定义代码`,
+  // },
 ];
 
 const imgHost = ref(`default`);
@@ -259,11 +266,11 @@ function saveQiniuConfiguration() {
   ElMessage.success(`保存成功`);
 }
 
-function formCustomSave() {
-  const str = formCustom.value.editor!.state.doc.toString();
-  localStorage.setItem(`formCustomConfig`, str);
-  ElMessage.success(`保存成功`);
-}
+// function formCustomSave() {
+//   const str = formCustom.value.editor!.state.doc.toString();
+//   localStorage.setItem(`formCustomConfig`, str);
+//   ElMessage.success(`保存成功`);
+// }
 
 function beforeImageUpload(file: File) {
   // check image
@@ -300,20 +307,20 @@ function uploadImage(params: { file: any }) {
 
       <el-tabs v-model="activeName">
         <el-tab-pane class="upload-panel" label="选择上传" name="upload">
-          <el-select
-            v-model="imgHost"
-            placeholder="请选择"
-            size="default"
-            class="absolute right-1 top-1 w-[100px]"
-            @change="changeImgHost"
-          >
-            <el-option
-              v-for="item in options"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
+          <Select v-model="imgHost" @update:model-value="changeImgHost">
+            <SelectTrigger class="absolute right-1 top-1 w-[100px]">
+              <SelectValue placeholder="选择图床" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="item in options"
+                :key="item"
+                :value="item.value"
+              >
+                {{ item.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <el-upload
             drag
             multiple
@@ -650,7 +657,7 @@ function uploadImage(params: { file: any }) {
             </el-form-item>
           </el-form>
         </el-tab-pane>
-        <el-tab-pane
+        <!-- <el-tab-pane
           class="github-panel formCustom"
           label="自定义代码"
           name="formCustom"
@@ -683,7 +690,7 @@ function uploadImage(params: { file: any }) {
               </el-button>
             </el-form-item>
           </el-form>
-        </el-tab-pane>
+        </el-tab-pane> -->
       </el-tabs>
     </DialogContent>
   </Dialog>
@@ -695,8 +702,8 @@ function uploadImage(params: { file: any }) {
   flex-flow: column;
   justify-content: center;
   align-items: center;
-  width: 500px;
-  height: 360px;
+  width: 360px;
+  height: 300px;
 
   .el-icon-upload {
     margin-top: 0;

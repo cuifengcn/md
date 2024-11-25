@@ -29,6 +29,7 @@ const {
   codeBlockTheme,
   legend,
   isMacCodeBlock,
+  isAiRealtime,
   cssEditor,
 } = storeToRefs(store);
 
@@ -41,6 +42,7 @@ const {
   codeBlockThemeChanged,
   legendChanged,
   macCodeBlockChanged,
+  toggleAiRealtime,
 } = store;
 
 const colorPicker = ref<(HTMLElement & { show: () => void }) | null>(null);
@@ -142,6 +144,12 @@ function customStyle() {
           <ElIconCheck />
         </el-icon>
         Mac 代码块
+      </MenubarItem>
+      <MenubarItem @click="() => toggleAiRealtime()">
+        <el-icon class="mr-2 h-4 w-4" :class="{ 'opacity-0': !isAiRealtime }">
+          <ElIconCheck />
+        </el-icon>
+        AI 实时提示
       </MenubarItem>
       <MenubarSeparator />
       <MenubarItem divided @click="resetStyleConfirm">

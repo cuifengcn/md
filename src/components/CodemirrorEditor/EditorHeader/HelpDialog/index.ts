@@ -215,3 +215,17 @@ export const tableHelp: string[] = [
 | 王五   | 28   | 广州     |
 `,
 ];
+
+export const directivesHelp: string[] = [
+  `
+:::main{#foo .bar class="baz" .qux}
+
+[指令语法(Directives syntax)介绍](https://talk.commonmark.org/t/generic-directives-plugins-syntax/444)
+
+::hr{.border-muted}
+
+You can use :i[CSS] (Cascading Style Sheets) to style your :abbr[HTML]{title="HyperText Markup Language"}.
+
+:::
+  `,
+];

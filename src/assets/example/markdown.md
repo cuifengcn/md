@@ -1,7 +1,5 @@
 # MD Intelligence 使用介绍
 
-## 语法介绍
-
 ### 1. 标题
 
 :::block-1
@@ -21,6 +19,7 @@
 :::block-1
 
 - 无序列表 1
+- 
 - 无序列表 2
   - 无序列表 2.1
   - 无序列表 2.2
@@ -37,6 +36,7 @@
 
 :::block-1
 **这个是粗体**
+
 
 _这个是斜体_
 
@@ -57,6 +57,8 @@ _这个是斜体_
 图片还可以和链接嵌套使用，能够实现推荐卡片的效果，用法如下：
 
 [![MD Intelligence功能介绍](https://picsum.photos/536/354)](https://www.xxx.com)
+
+
 :::
 
 ### 5. 分割线
@@ -148,7 +150,19 @@ pie
   "Iron" : 5
 ```
 
-### 11. 图片
+### 11. 指令语法
+
+:::main{#foo .bar class="baz" .qux}
+
+[指令语法(Directives syntax)介绍](https://talk.commonmark.org/t/generic-directives-plugins-syntax/444)
+
+::hr{.border-muted}
+
+You can use :i[CSS] (Cascading Style Sheets) to style your :abbr[HTML]{title="HyperText Markup Language"}.
+
+:::
+  
+### 12. 图片
 
 :::block-1
 ![这里写图片描述](https://picsum.photos/536/354)
@@ -156,7 +170,7 @@ pie
 ![示例图片](https://picsum.photos/536/354 "示例图片标题")
 :::
 
-### 12. 表格
+### 13. 表格
 
 :::block-1
 | 姓名 | 年龄 | 城市 |
@@ -172,45 +186,25 @@ pie
 
 - 点击右上角`选择AI模型`
 
-  ![](https://fastly.jsdelivr.net/gh/bucketio/img18@main/2024/11/15/1731638720983-a5a38c0f-8e9c-4d7f-9c48-69138e25aaf1.png)
-
 - 选择模型，配置`apiKey`，并保存
-
-![](https://fastly.jsdelivr.net/gh/bucketio/img13@main/2024/11/15/1731638856057-44056e3d-2b77-401c-ab69-3c7273c4bf3a.png)
 
 - 编辑区右键，选择`AI生成`
 
-![](https://fastly.jsdelivr.net/gh/bucketio/img12@main/2024/11/15/1731641592249-32029de0-c7ad-4649-8819-7baf184a6469.png)
-
 - 使用对应的AI功能，进行生成
-
-![](https://fastly.jsdelivr.net/gh/bucketio/img9@main/2024/11/15/1731641950629-e5b96b93-f231-4b81-8669-a84cfd2f1d5b.png)
 
 ### 2. 主题修改
 
 - 点击`主题`菜单栏
 
-- 修改`主题`、`配色`、`背景`、`代码块主题`
-
-![](https://fastly.jsdelivr.net/gh/bucketio/img10@main/2024/11/15/1731642133496-a2edf0fd-80a0-4a24-915d-853908eaa4fa.png)
+- 个性化配置`主题`、`配色`、`背景`、`代码块主题`
 
 ### 3. 自动发文
 
 - 点击右上角`发布`按钮
 - 如未安装`插件`，则先按照指引安装好插件
 - 选择要发布的账号，点击`发布`
-  ![](https://fastly.jsdelivr.net/gh/bucketio/img0@main/2024/11/15/1731642305530-a705db2c-8fdc-406b-a6e2-80a0e134522f.png)
 - 也可点击复制后，进行手动粘贴
-
-![](https://fastly.jsdelivr.net/gh/bucketio/img16@main/2024/11/15/1731642356843-96af31d3-b450-45e2-849f-b22f0f1d1903.png)
 
 ### 4. 导出
 
 - 文章支持导出为`markdown`、`html`、`pdf`不同格式。
-
-
-
-
-
-
-

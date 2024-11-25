@@ -48,6 +48,7 @@ export interface IOpts {
   size: string;
   legend?: string;
   status?: boolean;
+  outline?: OutlineItem[];
 }
 
 export type ThemeStyles = Record<Block | Inline, ExtendedProperties>;
@@ -75,11 +76,9 @@ export interface Article {
 
 export interface AiModel {
   name: string;
-  from: string;
-  desc?: string;
-  baseUrl: string;
+  modelName: string;
   apiKey?: string;
-  refUrl?: string;
+  baseUrl: string;
   temperature?: number;
   maxTokens?: number;
 }
@@ -88,7 +87,7 @@ export enum AiGenerateType {
   rewrite = `优化`,
   expand = `扩写`,
   fullArticle = `优化全文`,
-  generateArticle = `生成全文`
+  generateArticle = `生成全文`,
 }
 
 export interface PostArticleAccount {
@@ -103,4 +102,11 @@ export interface PostArticleAccount {
   checked?: boolean;
   status?: string;
   error?: string;
+}
+
+export interface OutlineItem {
+  id: string;
+  level: number;
+  title: string;
+  children: OutlineItem[];
 }

@@ -56,6 +56,9 @@ watch(
 );
 watch(isShowPromptDialog, (val) => {
   if (val) {
+    console.log(`打开ai对话框`);
+    console.log(props);
+
     // 打开此dialog时，自动触发
     if (
       store.editor?.selectedContent === input.value &&

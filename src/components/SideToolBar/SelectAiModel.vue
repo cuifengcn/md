@@ -5,7 +5,7 @@ import { useAiModelStore } from '@/stores';
 import { Icon } from '@iconify/vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
-import { h, onMounted, ref, toRaw } from 'vue';
+import { h, onMounted, ref, toRaw, watch } from 'vue';
 import { Button } from '../ui/button';
 import {
   Dialog,
@@ -18,42 +18,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '../ui/select';
 
 const aiStore = useAiModelStore();
 
-const { isShowSelectAiModelDialog, selectedAiModel, models } =
-  storeToRefs(aiStore);
+const { isShowSelectAiModelDialog, selectedAiModel } = storeToRefs(aiStore);
 
-const newSelectedModel = ref<string>(toRaw(selectedAiModel.value?.name));
+const defaultParams: AiModel = {
+  name: `deepseek大模型(深度求索)`,
+  modelName: `deepseek-chat`,
+  baseUrl: `https://api.deepseek.com`,
+  maxTokens: 80,
+};
+const modelParams = ref<AiModel>({ ...selectedAiModel.value });
 
-const apiKey = ref<string>();
-const baseUrl = ref<string>();
-onMounted(() => {
-  apiKey.value = selectedAiModel.value?.apiKey;
-  baseUrl.value = selectedAiModel.value?.baseUrl;
+watch(isShowSelectAiModelDialog, (val) => {
+  if (val) {
+    modelParams.value = { ...selectedAiModel.value };
+  }
 });
 
-function onChange(name: string) {
-  baseUrl.value = models.value.find((item) => item.name === name)?.baseUrl;
+function reset() {
+  modelParams.value = { ...defaultParams };
 }
-
-function select() {
-  if (!newSelectedModel.value) {
-    ElMessage.error(`请选择模型`);
-    return;
-  }
-  if (!apiKey.value) {
-    ElMessage.error(`请输入apiKey`);
-    return;
-  }
-  if (!baseUrl.value) {
-    ElMessage.error(`请输入baseUrl`);
-    return;
-  }
-  aiStore.selectAiModel({
-    ...models.value.find((item) => item.name === newSelectedModel.value),
-    apiKey: apiKey.value,
-    baseUrl: baseUrl.value,
-  } as AiModel);
+function save() {
+  aiStore.selectAiModel(modelParams.value);
   aiStore.toggleShowSelectAiModelDialog(false);
 }
+const showAdvanced = ref(false);
 const showHelp = ref(false);
 function onUpdate(val: boolean) {
   if (!val) {
@@ -80,45 +68,58 @@ function onUpdate(val: boolean) {
         <DialogTitle>选择AI模型</DialogTitle>
       </DialogHeader>
       <el-row class="flex-nowrap" align="middle">
-        <span class="mr-4 w-[70px] text-right">模型</span>
-        <Select v-model="newSelectedModel" @update:model-value="onChange">
-          <SelectTrigger>
-            <SelectValue placeholder="Select a fruit..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem
-              v-for="item in models"
-              :key="item.name"
-              :label="item.name"
-              :value="item.name"
-            >
-              {{ item.name }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <span class="mr-4 w-[80px] text-right text-sm">模型名称</span>
+        <el-input
+          v-model="modelParams.modelName"
+          placeholder="请输入模型名称"
+          size="large"
+        />
       </el-row>
       <el-row class="flex-nowrap" align="middle">
-        <span class="mr-4 w-[70px] text-right">apiKey</span>
-        <el-input v-model="apiKey" placeholder="请输入apiKey" size="large" />
+        <span class="mr-4 w-[80px] text-right text-sm">apiKey</span>
+        <el-input
+          v-model="modelParams.apiKey"
+          placeholder="请输入apiKey"
+          size="large"
+          autofocus
+        />
       </el-row>
       <el-row class="flex-nowrap" align="middle">
-        <span class="mr-4 w-[70px] text-right">baseUrl</span>
-        <el-input v-model="baseUrl" placeholder="请输入baseUrl" size="large" />
+        <span class="mr-4 w-[80px] text-right text-sm">baseUrl</span>
+        <el-input
+          v-model="modelParams.baseUrl"
+          placeholder="请输入baseUrl"
+          size="large"
+        />
       </el-row>
       <el-row align="end">
-        <el-link @click="() => (showHelp = !showHelp)"> 查看帮助 </el-link>
+        <el-link @click="() => (showAdvanced = !showAdvanced)">
+          高级设置
+        </el-link>
+      </el-row>
+      <template v-if="showAdvanced">
+        <el-row class="flex-nowrap" align="middle">
+          <span class="mr-4 w-[80px] text-right text-sm">temp</span>
+          <el-input
+            v-model="modelParams.temperature"
+            placeholder="请输入temperature"
+            size="large"
+          />
+        </el-row>
+        <el-row class="flex-nowrap" align="middle">
+          <span class="mr-4 w-[80px] text-right text-sm">maxToken</span>
+          <el-input
+            v-model="modelParams.maxTokens"
+            placeholder="请输入maxTokens"
+            size="large"
+          />
+        </el-row>
+      </template>
+      <el-row align="end">
+        <el-link @click="() => (showHelp = !showHelp)"> 帮助 </el-link>
       </el-row>
       <el-card v-if="showHelp" class="flex flex-col gap-2 text-sm">
-        在创建apiKey后才可使用ai服务,创建地址如下
-        <div class="flex gap-2">
-          智谱清言:
-          <el-link
-            href="https://bigmodel.cn/usercenter/apikeys"
-            target="_blank"
-          >
-            https://bigmodel.cn/usercenter/apikeys
-          </el-link>
-        </div>
+        推荐使用DeepSeek大模型, apiKey创建地址如下
         <div class="flex gap-2">
           DeepSeek:
           <el-link
@@ -128,16 +129,11 @@ function onUpdate(val: boolean) {
             https://platform.deepseek.com/api_keys
           </el-link>
         </div>
-        <div class="flex gap-2">
-          openai:
-          <el-link href="https://platform.openai.com/api-keys" target="_blank">
-            https://platform.openai.com/api-keys
-          </el-link>
-        </div>
       </el-card>
 
       <DialogFooter>
-        <Button variant="outline" @click="select"> 使用此模型 </Button>
+        <Button variant="secondary" @click="reset"> 恢复默认 </Button>
+        <Button variant="outline" @click="save"> 保存 </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

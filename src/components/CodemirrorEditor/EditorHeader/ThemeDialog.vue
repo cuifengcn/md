@@ -82,6 +82,7 @@ function onUpdate(val: boolean) {
             show-alpha
             class="mr-auto"
             style="height: 2em"
+            @change="store.colorChanged"
           />
         </div>
         <p class="text-lg">背景</p>

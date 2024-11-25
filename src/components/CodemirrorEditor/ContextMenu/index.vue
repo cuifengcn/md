@@ -29,7 +29,9 @@ import { Icon } from '@iconify/vue';
 import { ElCol } from 'element-plus';
 
 import { storeToRefs } from 'pinia';
-import { ref } from 'vue';
+
+// ai dialog参数
+const initGenerateType = defineModel<AiGenerateType>(`init-generate-type`);
 
 const store = useStore();
 const displayStore = useDisplayStore();
@@ -45,9 +47,6 @@ const {
 } = store;
 
 const { toggleShowInsertFormDialog, toggleShowUploadImgDialog } = displayStore;
-
-// ai dialog参数
-const initGenerateType = ref<AiGenerateType>();
 
 function aiGenerate() {
   aiModelStore.toggleShowPromptDialog(true);

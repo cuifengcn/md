@@ -48,5 +48,6 @@
   ],
   "files.autoSave": "afterDelay",
   "prettier.htmlWhitespaceSensitivity": "strict",
-  "prettier.vueIndentScriptAndStyle": false
+  "prettier.vueIndentScriptAndStyle": false,
+  "references.preferredLocation": "view"
 }

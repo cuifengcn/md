@@ -8,6 +8,7 @@ import { toMerged } from 'es-toolkit';
 import hljs from 'highlight.js';
 import { marked } from 'marked';
 import mermaid from 'mermaid';
+import { nanoid } from 'nanoid';
 import markedAlert from './markdownExtensions/alert';
 import { createDirectives } from './markdownExtensions/directive';
 // import { markedFootnote } from './markdownExtensions/footnote';
@@ -198,7 +199,14 @@ export function initRenderer(opts: IOpts) {
     heading({ tokens, depth }: Tokens.Heading) {
       const text = this.parser.parseInline(tokens);
       const tag = `h${depth}`;
-      return `<${tag} ><span class="prefix"></span><span class="content">${text}</span><span class="suffix"></span></${tag}>`;
+      const id = nanoid(5);
+      opts.outline?.push({
+        id,
+        level: depth,
+        title: text,
+        children: [],
+      });
+      return `<${tag} id="${id}" ><span class="prefix"></span><span class="content">${text}</span><span class="suffix"></span></${tag}>`;
       // return styledContent(tag, text);
     },
 
@@ -224,11 +232,11 @@ export function initRenderer(opts: IOpts) {
         codeIndex = setTimeout(() => {
           try {
             // const store = useStore();
-            mermaid.initialize({
-              startOnLoad: true,
-              // theme: store.isDark ? `dark` : `base`,
-              // darkMode: store.isDark,
-            });
+            // mermaid.initialize({
+            //   startOnLoad: true,
+            //   // theme: store.isDark ? `dark` : `base`,
+            //   // darkMode: store.isDark,
+            // });
             mermaid.run();
           } catch (error) {
             console.log(`mermaid error: ${error}`);

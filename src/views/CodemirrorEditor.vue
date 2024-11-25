@@ -6,8 +6,8 @@ import AiDialog from '@/components/ai/AiDialog.vue';
 import ContextMenuVue from '@/components/CodemirrorEditor/ContextMenu/index.vue';
 import CssEditor from '@/components/CodemirrorEditor/CssEditor.vue';
 import EditorFooter from '@/components/CodemirrorEditor/EditorFooter/index.vue';
-
 import EditorHeader from '@/components/CodemirrorEditor/EditorHeader/index.vue';
+
 import InsertFormDialog from '@/components/CodemirrorEditor/InsertFormDialog.vue';
 import UploadImgDialog from '@/components/CodemirrorEditor/UploadImgDialog.vue';
 import RunLoading from '@/components/RunLoading.vue';
@@ -68,6 +68,9 @@ const initGenerateType = ref<AiGenerateType>();
 function listenPreviewScroll() {
   function previewScrollCB() {
     if (scrollingTarget.value != null) {
+      return;
+    }
+    if (!store.isSyncScroll) {
       return;
     }
     clearTimeout(scrollingTimeout.value);
@@ -225,6 +228,9 @@ function initEditor() {
       if (scrollingTarget.value != null) {
         return false;
       }
+      if (!store.isSyncScroll) {
+        return;
+      }
       clearTimeout(scrollingTimeout.value);
       scrollingTarget.value = `editor`;
 
@@ -238,6 +244,7 @@ function initEditor() {
       scrollingTimeout.value = setTimeout(() => {
         scrollingTarget.value = null;
       }, 10);
+
       return false;
     }
   );
@@ -301,8 +308,8 @@ function mdLocalToRemote() {
         .replace(`](./${item.matchStr})`, `](${item.url})`)
         .replace(`](${item.matchStr})`, `](${item.url})`);
     });
-    const state = editor.value!.state;
-    editor.value!.dispatch(
+    const state = toRaw(editor.value)!.state;
+    toRaw(editor.value)!.dispatch(
       state.update({
         changes: { from: 0, to: state.doc.length, insert: md.str },
       })
@@ -403,25 +410,20 @@ onBeforeUnmount(() => {
         <ElCol
           ref="codeMirrorWrapper"
           :span="isShowCssEditor ? 8 : 12"
-          :lg="isShowCssEditor ? 8 : 14"
+          :lg="isShowCssEditor ? 8 : isPCMode ? 12 : 14"
           :xl="isShowCssEditor ? 8 : isPCMode ? 12 : 16"
           class="codeMirror-wrapper border-r-1"
           :class="{
             'order-1': !store.isEditOnLeft,
           }"
         >
-          <!-- <ContextMenu>
-            <ContextMenuTrigger>
-              <div id="editor" />
-            </ContextMenuTrigger>
-          </ContextMenu> -->
-          <ContextMenuVue />
+          <ContextMenuVue v-model:init-generate-type="initGenerateType" />
         </ElCol>
         <ElCol
           id="preview"
           ref="preview"
           :span="isShowCssEditor ? 8 : 12"
-          :lg="isShowCssEditor ? 8 : 10"
+          :lg="isShowCssEditor ? 8 : isPCMode ? 12 : 10"
           :xl="isShowCssEditor ? 8 : isPCMode ? 12 : 8"
           class="preview-wrapper p-5"
         >
@@ -456,7 +458,6 @@ onBeforeUnmount(() => {
         </ElCol>
         <CssEditor />
       </el-row>
-      <SideToolBar />
     </main>
     <EditorFooter />
 
@@ -467,6 +468,7 @@ onBeforeUnmount(() => {
       :generate-type="initGenerateType"
       :immediate="!!initGenerateType"
     />
+    <SideToolBar />
     <!-- <PromptDialog
       :generate-type="initGenerateType"
       :immediate="!!initGenerateType"
